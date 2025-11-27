@@ -12,6 +12,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../Themes/colors";
+import { apiFetch } from "../../src/apiFetch";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 const { width, height } = Dimensions.get("window");
@@ -32,7 +33,7 @@ const ProductModal = ({ product, onClose, userId }) => {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/cart`, {
+      const response = await apiFetch(`/cart/addtocart`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productWithOptions),

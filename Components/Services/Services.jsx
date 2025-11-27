@@ -496,7 +496,7 @@ const Services = () => {
                             Alert.alert('Error', 'User not logged in');
                             return;
                           }
-                          navigation.navigate('BookingForm', {
+                          navigation.navigate('bookplumber', {
                             technicianId: item.id,
                             techuserID: item.id,
                             loginUserId: loginUserId,

@@ -168,6 +168,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors } from '../Themes/colors'; // import theme
+import { apiFetch } from '../../src/apiFetch';
 import Constants from 'expo-constants';
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 
@@ -228,7 +229,7 @@ const UserDetailsScreen = () => {
       const requestData = { ...form, receipt_url: receiptUrl, user_id, subtotal, shipping_charges, total_amount, cart_items };
       setLoading(true);
 
-      const responseApi = await fetch(`${API_BASE_URL}/orders`, {
+      const responseApi = await apiFetch(`/cart/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),

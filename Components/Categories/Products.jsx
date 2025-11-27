@@ -95,7 +95,8 @@ import {
 import { FontAwesome } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProductModal from "../Products/ProductModal";
-import { colors } from "../Themes/colors";   // ✅ THEME COLORS
+import { colors } from "../Themes/colors";
+import { apiFetch } from "../../src/apiFetch";
 import Constants from "expo-constants";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
@@ -124,7 +125,7 @@ const Products = ({ route }) => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/subcategories/${subcategoryId}/products`);
+      const response = await apiFetch(`/products/subcategories/${subcategoryId}/products`);
       const data = await response.json();
       setProducts(data);
     } catch (error) {

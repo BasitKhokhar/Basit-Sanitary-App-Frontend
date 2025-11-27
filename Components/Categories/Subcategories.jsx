@@ -79,7 +79,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Dimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
-import { colors } from '../Themes/colors';   // ✅ THEME IMPORT
+import { colors } from '../Themes/colors';
+import { apiFetch } from '../../src/apiFetch';
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 const screenWidth = Dimensions.get('window').width;
@@ -97,7 +98,7 @@ const Subcategories = () => {
 
     const fetchSubcategories = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subcategories`);
+        const response = await apiFetch(`/products/categories/${categoryId}/subcategories`);
         const data = await response.json();
         setSubcategories(data);
       } catch (error) {

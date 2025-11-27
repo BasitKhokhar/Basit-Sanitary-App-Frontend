@@ -291,7 +291,7 @@ const CartScreen = () => {
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) throw new Error('User not logged in');
 
-      const response = await fetch(`${API_BASE_URL}/cart/${userId}`);
+      const response = await apiFetch(`/cart/cartitems`);
       if (!response.ok) throw new Error('Failed to fetch cart items');
 
       const data = await response.json();
@@ -323,7 +323,7 @@ const CartScreen = () => {
   const handleRemoveFromCart = async (cartId) => {
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`${API_BASE_URL}/cart/${userId}/${cartId}`, {
+      const response = await apiFetch(`/cart/${cartId}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to remove item');
@@ -337,7 +337,7 @@ const CartScreen = () => {
     if (newQuantity < 1) return;
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const response = await fetch(`${API_BASE_URL}/cart/${cartId}`, {
+      const response = await apiFetch(`/cart/${cartId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: newQuantity, user_id: userId }),

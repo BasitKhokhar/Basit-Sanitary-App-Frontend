@@ -87,6 +87,7 @@ import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { colors } from "../Themes/colors";
 
+import { apiFetch } from "../../src/apiFetch";
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 
 const FAQ = () => {
@@ -94,18 +95,26 @@ const FAQ = () => {
   const [faqs, setFaqs] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
     fetchFAQs();
   }, []);
 
+  // Fetch FAQs from backend
   const fetchFAQs = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/faqs`);
+      const response = await apiFetch(`/content/faqs`);
       const data = await response.json();
-      setFaqs(data);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        setErrorMsg("No FAQs available at the moment.");
+      } else {
+        setFaqs(data);
+      }
     } catch (error) {
       console.error("Error fetching FAQs:", error);
+      setErrorMsg("Unable to load FAQs. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -122,32 +131,58 @@ const FAQ = () => {
         backgroundColor: colors.bodybackground,
       }}
       contentContainerStyle={{
-        flexGrow: 1, // allows full height scroll area
+        flexGrow: 1,
         padding: 20,
       }}
     >
-     
-
+      {/* Loading State */}
       {loading ? (
         <View
           style={{
             flex: 1,
             justifyContent: "center",
             alignItems: "center",
-            minHeight: "80%", // ensures center position
-            backgroundColor: colors.cardsbackground,
-            borderRadius: 10,
+            minHeight: "80%",
           }}
         >
           <Loader />
         </View>
+      ) : errorMsg ? (
+        /* No Data or Error Message */
+        <View
+          style={{
+            padding: 20,
+            backgroundColor: colors.cardsbackground,
+            borderRadius: 10,
+            alignItems: "center",
+            marginTop: 50,
+          }}
+        >
+          <Ionicons
+            name="information-circle-outline"
+            size={50}
+            color={colors.mutedText}
+            style={{ marginBottom: 15 }}
+          />
+          <Text
+            style={{
+              color: colors.mutedText,
+              fontSize: 16,
+              textAlign: "center",
+              lineHeight: 22,
+            }}
+          >
+            {errorMsg}
+          </Text>
+        </View>
       ) : (
+        /* FAQs List */
         faqs.map((faq, index) => (
           <View
             key={faq.id}
             style={{
-              marginBottom: 10,
-              borderRadius: 10,
+              marginBottom: 12,
+              borderRadius: 12,
               overflow: "hidden",
               backgroundColor: colors.headerbg,
               elevation: 4,
@@ -161,8 +196,6 @@ const FAQ = () => {
                 alignItems: "center",
                 padding: 15,
                 backgroundColor: colors.cardsbackground,
-                borderTopLeftRadius: 10,
-                borderTopRightRadius: 10,
               }}
             >
               <Text
@@ -171,6 +204,7 @@ const FAQ = () => {
                   fontWeight: "bold",
                   color: colors.text,
                   flex: 1,
+                  marginRight: 10,
                 }}
               >
                 {faq.question}
