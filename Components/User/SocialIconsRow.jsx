@@ -1,48 +1,160 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Linking } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import Constants from 'expo-constants';
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, TouchableOpacity, FlatList, StyleSheet, Linking } from 'react-native';
+// import { FontAwesome5 } from '@expo/vector-icons';
+// import Constants from 'expo-constants';
+// import { colors } from '../Themes/colors';
+// import { apiFetch } from '../../src/apiFetch';
+// const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+
+// const iconMap = {
+//   "fa-brands fa-facebook": { name: "facebook", color: "#1877F2" },
+//   "fa-brands fa-facebook-messenger": { name: "facebook-messenger", color: "#0099FF" },
+//   "fa-brands fa-tiktok": { name: "tiktok", color: "#000000" },
+//   "fa-brands fa-linkedin": { name: "linkedin-in", color: "#0077B5" }
+// };
+
+// const SocialIconsRow = () => {
+//   const [socialIcons, setSocialIcons] = useState([]);
+
+//   useEffect(() => {
+//     apiFetch(`/content/socialicons`) 
+//       .then(response => response.json())
+//       .then(data => setSocialIcons(data))
+//       .catch(error => console.error('Error fetching social icons:', error));
+//   }, []);
+
+//   const handlePress = (url) => {
+//     Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
+//   };
+
+//   const renderItem = ({ item }) => {
+//     const iconData = iconMap[item.icons] || { name: "question-circle", color: "gray" }; // Default fallback
+//     return (
+//       <TouchableOpacity onPress={() => handlePress(item.routes)} style={styles.iconContainer}>
+//         <FontAwesome5 name={iconData.name} size={30} color={iconData.color} style={styles.icon} />
+//       </TouchableOpacity>
+//     );
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       <Text style={styles.title}>Social Links:</Text>
+//       <FlatList
+//         data={socialIcons}
+//         renderItem={renderItem}
+//         keyExtractor={(item, index) => index.toString()}
+//         horizontal
+//         showsHorizontalScrollIndicator={false}
+//       />
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     marginTop: 15,
+//     flexDirection: 'column',
+//     alignItems: 'flex-start',
+//     backgroundColor: "#FFFFFF",
+//     borderRadius: 10,
+//     elevation: 5,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.1,
+//     shadowRadius: 5,
+//     paddingHorizontal:10 ,paddingVertical:20
+//   },
+//   title: {
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//     marginBottom: 10,
+//     color: 'black',
+//   },
+//   iconContainer: {
+//     // marginHorizontal: 10,
+//   },
+//   icon: {
+//     paddingRight: 20,
+//   },
+// });
+
+// export default SocialIconsRow;
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Linking,
+  Animated,
+} from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors } from "../Themes/colors";
+import { apiFetch } from "../../src/apiFetch";
+
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 
 const iconMap = {
-  "fa-brands fa-facebook": { name: "facebook", color: "#1877F2" },
-  "fa-brands fa-facebook-messenger": { name: "facebook-messenger", color: "#0099FF" },
-  "fa-brands fa-tiktok": { name: "tiktok", color: "#000000" },
-  "fa-brands fa-linkedin": { name: "linkedin-in", color: "#0077B5" }
+  "fa-brands fa-facebook": { name: "facebook", color: "white" },
+  "fa-brands fa-facebook-messenger": { name: "facebook-messenger", color: "white" },
+  "fa-brands fa-tiktok": { name: "tiktok", color: "white" },
+  "fa-brands fa-linkedin": { name: "linkedin-in", color: "white" },
 };
 
 const SocialIconsRow = () => {
   const [socialIcons, setSocialIcons] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/social_icons`) // Replace with your actual API URL
-      .then(response => response.json())
-      .then(data => setSocialIcons(data))
-      .catch(error => console.error('Error fetching social icons:', error));
+    apiFetch(`/content/socialicons`)
+      .then((response) => response.json())
+      .then((data) => setSocialIcons(data))
+      .catch((error) => console.error("Error fetching social icons:", error));
   }, []);
 
   const handlePress = (url) => {
-    Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
+    Linking.openURL(url).catch((err) => console.error("Error opening URL:", err));
   };
 
   const renderItem = ({ item }) => {
-    const iconData = iconMap[item.icons] || { name: "question-circle", color: "gray" }; // Default fallback
+    const iconData = iconMap[item.icons] || { name: "question-circle", color: colors.mutedText };
+    const scale = new Animated.Value(1);
+
+    const onPressIn = () => Animated.spring(scale, { toValue: 0.9, useNativeDriver: true }).start();
+    const onPressOut = () =>
+      Animated.spring(scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+
     return (
-      <TouchableOpacity onPress={() => handlePress(item.routes)} style={styles.iconContainer}>
-        <FontAwesome5 name={iconData.name} size={30} color={iconData.color} style={styles.icon} />
-      </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale }], marginRight: 15 }}>
+        <TouchableOpacity
+          onPress={() => handlePress(item.routes)}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+        >
+          <LinearGradient
+            colors={colors.gradients.dark}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.iconCard}
+          >
+            <FontAwesome5 name={iconData.name} size={28} color={iconData.color} />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Social Links:</Text>
+    <View style={[styles.container, { backgroundColor: colors.bodybackground }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Follow Us:</Text>
       <FlatList
         data={socialIcons}
         renderItem={renderItem}
         keyExtractor={(item, index) => index.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 10 }}
       />
     </View>
   );
@@ -50,11 +162,11 @@ const SocialIconsRow = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 15,
+    marginTop: 5,
     flexDirection: 'column',
     alignItems: 'flex-start',
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    backgroundColor:colors.border,
+    borderRadius: 10,borderWidth:1,borderColor:colors.border,
     elevation: 5,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -63,15 +175,22 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+    marginLeft:10,
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'black',
   },
-  iconContainer: {
-    // marginHorizontal: 10,
-  },
-  icon: {
-    paddingRight: 20,
+  iconCard: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });
 

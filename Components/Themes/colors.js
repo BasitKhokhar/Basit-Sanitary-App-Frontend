@@ -17,7 +17,9 @@ const freshMint = {
     ocean: ["#009E5A", "#00C96D"],                
     mintGlow: ["#00E39F", "#00C96D"],         
     aquaPulse: ["#00FFCC", "#00C884"],            
-    deepTech: ["#F8F9FA", "#E4E6EB"],              
+    deepTech: ["#F8F9FA", "#E4E6EB"],  
+    dark:  [["#232526", "#414345"],],  
+    // dark:  ["#0f0c29", "#302b63", "#24243e"],          
   },
 };
 

@@ -63,9 +63,9 @@ const ServiceBookingForm = ({ route, navigation }) => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.bodybackground }]}>
-      
+
       <View style={styles.formContainer}>
-        <Text style={styles.heading}>Book a Electrician</Text>
+        {/* <Text style={styles.heading}>Book a Electrician</Text> */}
         <TextInput
           style={styles.input}
           placeholder="Name"
@@ -97,7 +97,7 @@ const ServiceBookingForm = ({ route, navigation }) => {
           placeholderTextColor={colors.mutedText}
         />
         <TextInput
-          style={[styles.input, { height: 100 }]}
+          style={[styles.input, { height: 100, textAlignVertical: 'top'}]}
           placeholder="Description"
           value={description}
           onChangeText={setDescription}
@@ -108,25 +108,28 @@ const ServiceBookingForm = ({ route, navigation }) => {
         <Text style={styles.note}>
           Latitude and Longitude will automatically be filled when you click 'Take Current Location'
         </Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Latitude"
-          value={latitude}
-          editable={false}
-          placeholderTextColor={colors.mutedText}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Longitude"
-          value={longitude}
-          editable={false}
-          placeholderTextColor={colors.mutedText}
-        />
-
         <TouchableOpacity style={styles.locationButton} onPress={getLocation}>
-          <Text style={styles.buttonText}>Take Location</Text>
+          <Text style={[styles.buttonText, { color: colors.primary }]}>Take Location</Text>
         </TouchableOpacity>
+        <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
+          <TextInput
+            style={[styles.input,{flex:1}]}
+            placeholder="Latitude"
+            value={latitude}
+            editable={false}
+            placeholderTextColor={colors.mutedText}
+          />
+          <TextInput
+             style={[styles.input,{flex:1}]}
+            placeholder="Longitude"
+            value={longitude}
+            editable={false}
+            placeholderTextColor={colors.mutedText}
+          />
+
+        </View>
+
+
 
         <TouchableOpacity style={styles.submitButton} onPress={submitBooking}>
           <Text style={styles.buttonText}>Submit Booking</Text>
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   formContainer: {
-    marginTop:20,
+    marginTop: 20,
     backgroundColor: colors.cardsbackground,
     marginHorizontal: 15,
     padding: 16,
@@ -178,16 +181,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   locationButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.cardsbackground, borderWidth: 1.5, borderColor: colors.primary,
     paddingVertical: 15,
-    borderRadius: 25,
+    borderRadius: 12,
     alignItems: 'center',
     marginVertical: 10,
   },
   submitButton: {
     backgroundColor: colors.accent,
     paddingVertical: 15,
-    borderRadius: 25,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: 15,
   },
