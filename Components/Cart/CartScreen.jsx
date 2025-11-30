@@ -267,7 +267,8 @@
 // });
 
 // export default CartScreen;
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback,useContext } from 'react';
+import { CartContext } from '../../src/ContextApis/cartContext';
 import { View, Text, FlatList, Image, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -275,9 +276,10 @@ import Loader from '../Loader/Loader';
 import Constants from 'expo-constants';
 import { colors } from "../Themes/colors";
 import { apiFetch } from '../../src/apiFetch';
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+
 
 const CartScreen = () => {
+  const { fetchCartCount } = useContext(CartContext);
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalAmount, setTotalAmount] = useState(0);
@@ -328,6 +330,7 @@ const CartScreen = () => {
       });
       if (!response.ok) throw new Error('Failed to remove item');
       setCartItems(cartItems.filter((item) => item.cart_id !== cartId));
+      fetchCartCount();
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -353,6 +356,7 @@ const CartScreen = () => {
           item.cart_id === cartId ? { ...item, quantity: newQuantity } : item
         )
       );
+      fetchCartCount();
     } catch (error) {
       Alert.alert('Error', error.message);
     }

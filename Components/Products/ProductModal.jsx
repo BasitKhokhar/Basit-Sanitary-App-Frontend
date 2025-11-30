@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
+import { CartContext } from "../../src/ContextApis/cartContext";
 import {
   View,
   Text,
@@ -11,6 +12,8 @@ import {
 import { FontAwesome } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
+
+
 import { colors } from "../Themes/colors";
 import { apiFetch } from "../../src/apiFetch";
 
@@ -20,6 +23,7 @@ const { width, height } = Dimensions.get("window");
 const colorOptions = ["White", "Half White", "Chrome", "Light Pink", "Light Grey", "Burgundy"];
 
 const ProductModal = ({ product, onClose, userId }) => {
+  const { fetchCartCount } = useContext(CartContext);
   const [selectedColor, setSelectedColor] = useState(null);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
@@ -38,9 +42,9 @@ const ProductModal = ({ product, onClose, userId }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productWithOptions),
       });
-
+     
       const data = await response.json();
-
+   
       if (response.ok) {
         setConfirmationMessage(data.message || "Product added to cart");
         setConfirmationVisible(true);
@@ -48,9 +52,12 @@ const ProductModal = ({ product, onClose, userId }) => {
           setConfirmationVisible(false);
           onClose();
         }, 2000);
-      } else {
+        
+      } 
+      else {
         console.error("Failed to add product to cart");
       }
+       fetchCartCount();
     } catch (error) {
       console.error("Error:", error);
     }

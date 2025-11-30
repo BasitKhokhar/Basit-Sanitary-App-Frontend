@@ -392,7 +392,7 @@
 // },
 
 // });
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useContext } from "react";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { View, Image, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -440,27 +440,20 @@ const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 const stripeKey = Constants.expoConfig.extra.stripePublishableKey;
 
 import { colors } from "./Components/Themes/colors";
+import { CartContext } from "./src/ContextApis/cartContext";
+import { CartProvider } from "./src/ContextApis/cartContext";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // ------------------ Main Layout ------------------
 const MainLayout = ({ navigation, children, currentScreen }) => {
-  // const [logo, setLogo] = useState(null);
-
-  // useEffect(() => {
-  //   const fetchLogo = async () => {
-  //     try {
-  //       const response = await fetch(`${API_BASE_URL}/logo_image`);
-  //       const data = await response.json();
-  //       if (data.length > 0) setLogo(data[0].image_url);
-  //     } catch (error) {
-  //       console.error("Error fetching logo:", error);
-  //     }
-  //   };
-  //   fetchLogo();
-  // }, []);
-
+ const { cartCount, fetchCartCount } = useContext(CartContext);
+ console.log("cart count in app.js",cartCount)
+ // Fetch cart count whenever this layout mounts or becomes active
+  useEffect(() => {
+    fetchCartCount();
+  }, []);
   return (
     <View style={[styles.container, { backgroundColor: colors.bodybackground }]}>
       <View style={[styles.header, { backgroundColor: colors.headerbg }]}>
@@ -514,10 +507,10 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
                 {name}
               </Text>
 
-              {/* Example Cart Badge */}
-              {name === "Cart" && (
+              {/* Cart Badge */}
+              {name === "Cart" && cartCount > 0 && (
                 <View style={[styles.cartBadge, { backgroundColor: colors.error }]}>
-                  <Text style={styles.cartCount}>3</Text>
+                  <Text style={styles.cartCount}>{cartCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -639,6 +632,9 @@ const App = () => {
   if (checkingLogin) return <SplashScreen />;
   return (
     <StripeProvider publishableKey={stripeKey} merchantDisplayName="Basit Sanitary App">
+      <CartProvider>
+
+     
       <NavigationContainer>
         <Stack.Navigator initialRouteName={userId ? "Main" : "Login"}>
           <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
@@ -668,6 +664,7 @@ const App = () => {
           <Stack.Screen name="Logout" component={LogoutScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+       </CartProvider>
     </StripeProvider>
   );
 };
