@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,18 +10,34 @@ import {
   Platform,
   ImageBackground,
 } from "react-native";
+import * as AuthSession from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+WebBrowser.maybeCompleteAuthSession();
+
+
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors } from "../Themes/colors"; 
-import bgImage from "../../assets/splash1.jpg"; 
+import { colors } from "../Themes/colors";
+import bgImage from "../../assets/splash1.jpg";
 import { apiFetch } from "../../src/apiFetch";
-
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+const { EXPO_CLIENT_ID, ANDROID_CLIENT_ID } = Constants.expoConfig.extra;
 
 const LoginScreen = ({ navigation }) => {
+
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "basitsanitaryapp",
+  });
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: ANDROID_CLIENT_ID,
+    expoClientId: EXPO_CLIENT_ID,
+    redirectUri,
+  });
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState(false);
@@ -72,6 +88,37 @@ const LoginScreen = ({ navigation }) => {
       console.error("Login error:", err);
     }
   };
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const idToken = response.authentication.idToken;
+      handleGoogleLogin(idToken);
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async (idToken) => {
+    try {
+      const res = await apiFetch(`/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+
+      if (data.accessToken) {
+        await SecureStore.setItemAsync("accessToken", data.accessToken);
+        await SecureStore.setItemAsync("refreshToken", data.refreshToken);
+        await AsyncStorage.setItem("userId", data.userId.toString());
+        await AsyncStorage.setItem("email", data.email);
+        navigation.replace("SplashScreen");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Google login failed");
+    }
+  };
+
+
 
   return (
     <ImageBackground source={bgImage} style={styles.backgroundImage}>
@@ -142,6 +189,14 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.link}> Sign up</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={styles.socialButton}
+            onPress={() => promptAsync()}
+          >
+            <Icon name="google" size={22} color={colors.primary} />
+          </TouchableOpacity>
+
         </View>
       </KeyboardAvoidingView>
     </ImageBackground>

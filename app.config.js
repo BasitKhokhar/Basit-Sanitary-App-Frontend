@@ -14,6 +14,7 @@ export default () => ({
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
+    scheme: "basitsanitaryapp",
     android: {
       package: "com.basitkhokhar.sanitaryapp",
       adaptiveIcon: {
@@ -29,8 +30,13 @@ export default () => ({
     extra: {
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       API_BASE_URL: process.env.API_BASE_URL,
+      // Add Google Client IDs here
+      EXPO_CLIENT_ID: process.env.EXPO_CLIENT_ID,
+      ANDROID_CLIENT_ID: process.env.ANDROID_CLIENT_ID,
+      // IOS_CLIENT_ID: process.env.IOS_CLIENT_ID,
+
       eas: {
-        projectId: "00419d90-2f51-4972-b963-c5d1daad4b19" 
+        projectId: process.env.EXPO_PROJECT_ID 
       },
 
     }
