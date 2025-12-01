@@ -11,29 +11,30 @@ const UserNameDisplay = () => {
   const [userName, setUserName] = useState("");
   const [userImage, setUserImage] = useState(null);
 
-  useEffect(() => {
-    const fetchUserName = async () => {
-      const storedUserId = await AsyncStorage.getItem("userId");
-      if (storedUserId) {
-        try {
-          const response = await apiFetch(`/users/${storedUserId}`);
-          if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+ useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      // Get user details (name, phone, email)
+      const response = await apiFetch(`/users/getuserdetails`);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      const data = await response.json();
+      setUserName(data.name);
 
-          const data = await response.json();
-          setUserName(data.name);
-
-          const imageResponse = await fetch(`${API_BASE_URL}/user_images/${storedUserId}`);
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json();
-            setUserImage(imageData.image_url);
-          }
-        } catch (error) {
-          console.error("Error fetching user name:", error);
-        }
+      // Get user image
+      const imageResponse = await apiFetch(`/users/user_images`);
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json();
+        setUserImage(imageData.image_url);
       }
-    };
-    fetchUserName();
-  }, []);
+
+    } catch (error) {
+      console.error("❌ Error fetching user:", error);
+    }
+  };
+
+  fetchUserData();
+}, []);
+
 
   return (
     <LinearGradient

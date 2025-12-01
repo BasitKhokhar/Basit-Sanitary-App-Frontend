@@ -461,12 +461,12 @@ const UserScreen = () => {
       const storedUserId = await AsyncStorage.getItem("userId");
 
       if (storedUserId) {
-        const response = await apiFetch(`/users/${storedUserId}`);
+        const response = await apiFetch(`/users/getuserdetails`);
         const data = await response.json();
         setUserData(data);
 
         const imageResponse = await apiFetch(
-          `/users/user_images/${storedUserId}`
+          `/users/user_images`
         );
         if (imageResponse.ok) {
           const imageData = await imageResponse.json();

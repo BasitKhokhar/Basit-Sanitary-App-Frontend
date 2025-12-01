@@ -22,21 +22,21 @@ const CustomerSupportScreen = () => {
         
         {/* EMAIL BOX */}
         <LinearGradient
-          colors={colors.gradients.mintGlow}    // ✅ Theme gradient
+          colors={colors.gradients.dark}    // ✅ Theme gradient
           start={{ x: 0, y: 1 }}
           end={{ x: 1, y: 0 }}
           style={styles.containergradient}
         >
           <View style={styles.emailbox}>
-            <Text style={[styles.headings, { color: colors.text }]}>Emails:</Text>
-            <Text style={[styles.headingtext, { color: colors.text }]}>1. basitsanitaryapp@gmail.com</Text>
-            <Text style={[styles.headingtext, { color: colors.text }]}>2. basitsanitaryapp@gmail.com</Text>
+            <Text style={[styles.headings, { color: colors.white }]}>Emails:</Text>
+            <Text style={[styles.headingtext, { color: colors.white }]}>1. basitsanitaryapp@gmail.com</Text>
+            <Text style={[styles.headingtext, { color: colors.white }]}>2. basitsanitaryapp@gmail.com</Text>
           </View>
         </LinearGradient>
 
         {/* PHONE BOX */}
         <LinearGradient
-          colors={colors.gradients.ocean}       // ✅ Theme gradient
+          colors={colors.gradients.dark}     
           start={{ x: 0, y: 1 }}
           end={{ x: 1, y: 0 }}
           style={styles.containergradient}

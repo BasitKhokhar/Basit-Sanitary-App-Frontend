@@ -60,13 +60,13 @@ const AccountDetailScreen = ({ route, navigation }) => {
   };
 
   // --- Save image URL to backend ---
-  const saveImageUrlToDatabase = async (userId, imageUrl) => {
+  const saveImageUrlToDatabase = async ( imageUrl) => {
     await apiFetch(
       `/users/upload-profile-image`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, image_url: imageUrl }),
+        body: JSON.stringify({image_url: imageUrl }),
       },
       navigation
     );
@@ -76,9 +76,8 @@ const AccountDetailScreen = ({ route, navigation }) => {
   const updateUserDetails = async () => {
     try {
       setShowLoader(true);
-      const userId = await AsyncStorage.getItem("userId");
       const response = await apiFetch(
-        `/users/${userId}`,
+        `/users/updateuser`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
