@@ -145,7 +145,7 @@ const StripePayment = ({ route }) => {
           >
             <TextInput
               style={[styles.cardInput, { color: colors.text }]}
-              placeholder="1234 5678 9012 3456"
+              placeholder="2424 2424 2424 2424"
               placeholderTextColor={colors.mutedText}
               keyboardType="numeric"
               maxLength={19}

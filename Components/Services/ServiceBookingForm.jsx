@@ -65,7 +65,7 @@ const ServiceBookingForm = ({ route, navigation }) => {
     <ScrollView style={[styles.container, { backgroundColor: colors.bodybackground }]}>
 
       <View style={styles.formContainer}>
-        {/* <Text style={styles.heading}>Book a Electrician</Text> */}
+        <Text style={styles.heading}>Fill this form to book a Plumber</Text>
         <TextInput
           style={styles.input}
           placeholder="Name"
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heading: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginVertical: 10,
