@@ -40,24 +40,58 @@ const AccountDetailScreen = ({ route, navigation }) => {
   };
 
   // --- Upload to Firebase Storage ---
-  const uploadImageToFirebase = async (uri) => {
-    try {
-      setShowLoader(true);
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const userId = await AsyncStorage.getItem("userId");
-      const fileRef = ref(storage, `CardifyProfileImages/${userId}.jpg`);
-      await uploadBytes(fileRef, blob);
-      const imageUrl = await getDownloadURL(fileRef);
-      await saveImageUrlToDatabase(userId, imageUrl);
-      setShowLoader(false);
-      showToastMessage("Profile image uploaded successfully!");
-    } catch (error) {
-      console.error("❌ Upload Error:", error);
-      setShowLoader(false);
-      showToastMessage("Failed to upload image.");
-    }
-  };
+  // const uploadImageToFirebase = async (uri) => {
+  //   try {
+  //     setShowLoader(true);
+  //     const response = await fetch(uri);
+  //     const blob = await response.blob();
+  //     const userId = await AsyncStorage.getItem("userId");
+  //     const fileRef = ref(storage, `CardifyProfileImages/${userId}.jpg`);
+  //     await uploadBytes(fileRef, blob);
+  //     const imageUrl = await getDownloadURL(fileRef);
+  //     await saveImageUrlToDatabase(userId, imageUrl);
+  //     setShowLoader(false);
+  //     showToastMessage("Profile image uploaded successfully!");
+  //   } catch (error) {
+  //     console.error("❌ Upload Error:", error);
+  //     setShowLoader(false);
+  //     showToastMessage("Failed to upload image.");
+  //   }
+  // };
+const uploadImageToFirebase = async (uri) => {
+  try {
+    setShowLoader(true);
+
+    // Convert local URI to blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    // Get user ID
+    const userId = await AsyncStorage.getItem("userId");
+
+    // Create a storage reference
+    const fileRef = ref(storage, `CardifyProfileImages/${userId}.jpg`);
+
+    // Upload the file
+    await uploadBytes(fileRef, blob);
+
+    // Get the download URL
+    const imageUrl = await getDownloadURL(fileRef);
+
+    // --- Debug log to check what is sent to backend ---
+    console.log("💾 Firebase Image URL to send to backend:", imageUrl);
+
+    // Save URL to backend
+    await saveImageUrlToDatabase(userId, imageUrl);
+
+    setShowLoader(false);
+    showToastMessage("Profile image uploaded successfully!");
+  } catch (error) {
+    console.error("❌ Upload Error:", error);
+    setShowLoader(false);
+    showToastMessage("Failed to upload image.");
+  }
+};
 
   // --- Save image URL to backend ---
   const saveImageUrlToDatabase = async ( imageUrl) => {

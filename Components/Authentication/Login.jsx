@@ -28,15 +28,15 @@ const { EXPO_CLIENT_ID, ANDROID_CLIENT_ID } = Constants.expoConfig.extra;
 
 const LoginScreen = ({ navigation }) => {
 
- const redirectUri = AuthSession.makeRedirectUri({
-  scheme: "basitsanitaryapp",
-  preferLocalhost: true,
-});
- const [request, response, promptAsync] = Google.useAuthRequest({
-  expoClientId: EXPO_CLIENT_ID,
-  androidClientId: ANDROID_CLIENT_ID,
-  redirectUri,
-});
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "basitsanitaryapp",
+    preferLocalhost: true,
+  });
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: EXPO_CLIENT_ID,
+    androidClientId: ANDROID_CLIENT_ID,
+    redirectUri,
+  });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -173,7 +173,7 @@ const LoginScreen = ({ navigation }) => {
           {/* Login Button */}
           <TouchableOpacity style={styles.buttonWrapper} onPress={handleLogin}>
             <LinearGradient
-              colors={colors.gradients.mintGlow}
+              colors={colors.gradients.ocean}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.button}
@@ -190,12 +190,20 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* <TouchableOpacity
-            style={styles.socialButton}
-            onPress={() => promptAsync()}
-          >
-            <Icon name="google" size={22} color={colors.primary} />
-          </TouchableOpacity> */}
+          <TouchableOpacity onPress={() => promptAsync()} style={{ marginTop: 40, borderRadius: 12, elevation: 5 }}>
+            <LinearGradient
+              colors={colors.gradients.ocean} // replace with your desired gradient from colors file
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.googleButtonGradient}
+            >
+              <View style={styles.googleContent}>
+                <Icon name="google" size={22} color="#fff" />
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
 
         </View>
       </KeyboardAvoidingView>
@@ -267,12 +275,12 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   button: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
   },
   buttonText: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -289,6 +297,36 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "bold",
     fontSize: 15,
+  },
+  googleButtonGradient: {
+  paddingVertical: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  justifyContent: "center",
+},
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#4285F4", // Google blue
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 20,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  googleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10, // space between icon and text
+  },
+  googleText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
