@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     paddingTop: 35,
-    paddingBottom: 10,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
