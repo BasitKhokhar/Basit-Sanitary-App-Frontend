@@ -189,20 +189,17 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.link}> Sign up</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity onPress={() => promptAsync()} style={{ marginTop: 40, borderRadius: 12, elevation: 5 }}>
-            <LinearGradient
-              colors={colors.gradients.ocean} // replace with your desired gradient from colors file
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.googleButtonGradient}
-            >
-              <View style={styles.googleContent}>
-                <Icon name="google" size={22} color="#fff" />
-                <Text style={styles.googleText}>Continue with Google</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => promptAsync()}>
+              <Icon name="google" size={22} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Icon name="facebook" size={22} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Icon name="apple" size={22} color={colors.text} />
+            </TouchableOpacity>
+          </View>
 
 
         </View>
@@ -298,6 +295,30 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 15,
   },
+
+buttonsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 25,
+    gap: 20,
+  },
+  socialButton: {
+    backgroundColor: colors.secondary,
+    padding: 14,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 55,
+    height: 55,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
+
   googleButtonGradient: {
   paddingVertical: 14,
   borderRadius: 12,

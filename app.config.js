@@ -31,15 +31,14 @@ export default () => ({
 
     plugins: [
       "expo-secure-store",
-
-      // ✅ Kotlin version fix (required for your Gradle error)
+      "expo-web-browser",
       [
-        "expo-build-properties",
-        {
-          android: {
-            kotlinVersion: "2.0.20"
-          }
+      "expo-build-properties",
+      {
+        android: {
+          kotlinVersion: "2.0.20"
         }
+      }
       ]
     ],
 

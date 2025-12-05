@@ -86,7 +86,7 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
           </TouchableOpacity>
 
           {/* Notification */}
-          {/* <TouchableOpacity
+          <TouchableOpacity
             style={[styles.circularButton, { position: "relative", }]}
             onPress={() => navigation.navigate("allNotifications")}
           >
@@ -116,7 +116,7 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
                 </View>
               )}
             </LinearGradient>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -225,187 +225,16 @@ export const commonHeaderOptions = {
   },
 };
 
-
 // ------------------ App ------------------
-// const App = () => {
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
-//   const [checkingLogin, setCheckingLogin] = useState(true);
-//   const [isSplash1Visible, setIsSplash1Visible] = useState(true);
-//   const [isSplash2Visible, setIsSplash2Visible] = useState(null);
-//   const [isSplash3Visible, setIsSplash3Visible] = useState(null);
-//   const [isSplash4Visible, setIsSplash4Visible] = useState(null);
-//   const [isSplash5Visible, setIsSplash5Visible] = useState(null);
-
-
-//   //   useEffect(() => {
-//   //   const clearAppDataOnce = async () => {
-//   //     try {
-//   //       await AsyncStorage.clear();
-//   //       console.log("✅ AsyncStorage cleared");
-
-//   //       await SecureStore.deleteItemAsync("jwt_token");
-//   //       await SecureStore.deleteItemAsync("userId"); // add more keys if needed
-//   //       console.log("✅ SecureStore cleared");
-
-//   //       console.log("📦 Storage wiped — next start will force login");
-//   //     } catch (error) {
-//   //       console.error("❌ Error clearing app data:", error);
-//   //     }
-//   //   };
-
-//   //   clearAppDataOnce();
-//   // }, []);
-
-//   // ✅ Check for valid token only
-//   useEffect(() => {
-//     const checkLogin = async () => {
-//       try {
-//         const token = await SecureStore.getItemAsync("refreshToken");
-
-//         if (token) {
-//           // Optionally: call API to validate token
-//           setIsLoggedIn(true);
-//           setIsSplash2Visible(false);
-//           setIsSplash3Visible(false);
-//           setIsSplash4Visible(false);
-//           setIsSplash5Visible(false);
-//         } else {
-//           setIsLoggedIn(false);
-//           setIsSplash2Visible(true);
-//           setIsSplash3Visible(false);
-//           setIsSplash4Visible(false);
-//           setIsSplash5Visible(false);
-//         }
-//       } catch (error) {
-//         console.error("Error checking login:", error);
-//         setIsLoggedIn(false);
-//       } finally {
-//         setCheckingLogin(false);
-//       }
-//     };
-
-//     checkLogin();
-//   }, []);
-
-//   // Splash screen flow
-//   useEffect(() => {
-//     const splashFlow = async () => {
-//       await new Promise((resolve) => setTimeout(resolve, 5000));
-//       setIsSplash1Visible(false);
-//     };
-//     splashFlow();
-//   }, []);
-
-//   // ✅ Splash screens handling
-//   if (isSplash1Visible) return <SplashScreen1 />;
-//   if (isSplash2Visible) return <SplashScreen2 onNext={() => { setIsSplash2Visible(false); setIsSplash3Visible(true); }} />;
-//   if (isSplash3Visible) return <SplashScreen3 onNext={() => { setIsSplash3Visible(false); setIsSplash4Visible(true); }} />;
-//   if (isSplash4Visible) return <SplashScreen4 onNext={() => { setIsSplash4Visible(false); setIsSplash5Visible(true); }} />;
-//   if (isSplash5Visible) return <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />;
-//   if (checkingLogin) return <SplashScreen />;
-
-//   return (
-//     <AppContainer backgroundColor="#1A1A1A">
-//       <StripeProvider publishableKey={stripeKey} merchantDisplayName="Basit Sanitary App">
-//         <NotificationProvider>
-//           <CartProvider>
-//             <NavigationContainer>
-//               <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "Login"}>
-//                 <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-//                 <Stack.Screen name="Login" options={{ headerShown: false }}>
-//                   {(props) => <LoginScreen {...props} />}
-//                 </Stack.Screen>
-//                 <Stack.Screen name="Main" options={{ headerShown: false }}>
-//                   {(props) => <BottomTabs {...props} />}
-//                 </Stack.Screen>
-
-//                 {/* Other Screens */}
-//                 <Stack.Screen name="allNotifications" component={AllNotifications} options={{ title: "All Notifications", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Checkout", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="AddressScreen" component={AddressScreen} />
-//                 <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: "Payment Methods", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="Profile" component={UserScreen} options={{ title: "Profile" }} />
-//                 <Stack.Screen name="Categories" component={Categories} />
-//                 <Stack.Screen name="Subcategories" component={Subcategories} options={{ title: "SubCategories", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="Products" component={Products} options={{ title: "Products", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Products", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
-//                 <Stack.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: "Confirm Order", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="bookplumber" component={ServiceBookingForm} options={{ title: "Book Plumber", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="User" component={UserScreen} />
-//                 <Stack.Screen name="AccountDetail" component={AccountDetailScreen} options={{ title: "Profile Update", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="CustomerSupport" component={CustomerSupportScreen} options={{ title: "Customer Support", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="faq" component={FAQ} options={{ title: "FAQs", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="about" component={About} options={{ title: "About Us", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="StripePayment" component={StripePayment} options={{ title: "Card Payment", ...commonHeaderOptions, }} />
-//                 <Stack.Screen name="Logout" component={LogoutScreen} />
-//               </Stack.Navigator>
-//             </NavigationContainer>
-//           </CartProvider>
-//         </NotificationProvider>
-//       </StripeProvider>
-//     </AppContainer>
-//   );
-// };
-
-// export default App;
-
 const App = () => {
-  // const [userId, setUserId] = useState(null);
-  // const [checkingLogin, setCheckingLogin] = useState(true);
-  // const [isSplash1Visible, setIsSplash1Visible] = useState(true);
-  // const [isSplash2Visible, setIsSplash2Visible] = useState(null);
-  // const [isSplash3Visible, setIsSplash3Visible] = useState(null);
-  // const [isSplash4Visible, setIsSplash4Visible] = useState(null);
-  // const [isSplash5Visible, setIsSplash5Visible] = useState(null);
-
-  // useEffect(() => {
-  //   const checkLogin = async () => {
-  //     try {
-  //       const token = await SecureStore.getItemAsync("refreshToken");
-  //       const storedUserId = await AsyncStorage.getItem("userId");
-  //       console.log("login data in app.js",token,storedUserId)
-  //       if (token && storedUserId) {
-  //         setUserId(storedUserId);
-  //         setIsSplash2Visible(false);
-  //         setIsSplash3Visible(false);
-  //         setIsSplash4Visible(false);
-  //         setIsSplash5Visible(false);
-  //       } else {
-  //         setIsSplash2Visible(true);
-  //         setIsSplash3Visible(false);
-  //         setIsSplash4Visible(false);
-  //         setIsSplash5Visible(false);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error checking login:", error);
-  //     } finally {
-  //       setCheckingLogin(false);
-  //     }
-  //   };
-  //   checkLogin();
-  // }, []);
-
-  // useEffect(() => {
-  //   const splashFlow = async () => {
-  //     await new Promise((resolve) => setTimeout(resolve, 5000));
-  //     setIsSplash1Visible(false);
-  //   };
-  //   splashFlow();
-  // }, []);
-
-  // if (isSplash1Visible) return <SplashScreen1 />;
-  // if (isSplash2Visible) return <SplashScreen2 onNext={() => { setIsSplash2Visible(false); setIsSplash3Visible(true); }} />;
-  // if (isSplash3Visible) return <SplashScreen3 onNext={() => { setIsSplash3Visible(false); setIsSplash4Visible(true); }} />;
-  // if (isSplash4Visible) return <SplashScreen4 onNext={() => { setIsSplash4Visible(false); setIsSplash5Visible(true); }} />;
-  // if (isSplash5Visible) return <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />;
-  // if (checkingLogin) return <SplashScreen />;
-const [userId, setUserId] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingLogin, setCheckingLogin] = useState(true);
   const [isSplash1Visible, setIsSplash1Visible] = useState(true);
   const [isSplash2Visible, setIsSplash2Visible] = useState(null);
   const [isSplash3Visible, setIsSplash3Visible] = useState(null);
   const [isSplash4Visible, setIsSplash4Visible] = useState(null);
+  const [isSplash5Visible, setIsSplash5Visible] = useState(null);
+
 
   //   useEffect(() => {
   //   const clearAppDataOnce = async () => {
@@ -426,25 +255,29 @@ const [userId, setUserId] = useState(null);
   //   clearAppDataOnce();
   // }, []);
 
-
+  // ✅ Check for valid token only
   useEffect(() => {
     const checkLogin = async () => {
       try {
         const token = await SecureStore.getItemAsync("refreshToken");
-        const storedUserId = await AsyncStorage.getItem("userId");
-        console.log("userid in app.js is", storedUserId, token)
-        if (token && storedUserId) {
-          setUserId(storedUserId);
+
+        if (token) {
+          // Optionally: call API to validate token
+          setIsLoggedIn(true);
           setIsSplash2Visible(false);
           setIsSplash3Visible(false);
           setIsSplash4Visible(false);
+          setIsSplash5Visible(false);
         } else {
+          setIsLoggedIn(false);
           setIsSplash2Visible(true);
           setIsSplash3Visible(false);
           setIsSplash4Visible(false);
+          setIsSplash5Visible(false);
         }
       } catch (error) {
         console.error("Error checking login:", error);
+        setIsLoggedIn(false);
       } finally {
         setCheckingLogin(false);
       }
@@ -453,75 +286,68 @@ const [userId, setUserId] = useState(null);
     checkLogin();
   }, []);
 
+  // Splash screen flow
   useEffect(() => {
     const splashFlow = async () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
       setIsSplash1Visible(false);
     };
-
     splashFlow();
   }, []);
 
-  if (isSplash1Visible) {
-    return <SplashScreen1 />;
-  }
+  // ✅ Splash screens handling
+  if (isSplash1Visible) return <SplashScreen1 />;
+  if (isSplash2Visible) return <SplashScreen2 onNext={() => { setIsSplash2Visible(false); setIsSplash3Visible(true); }} />;
+  if (isSplash3Visible) return <SplashScreen3 onNext={() => { setIsSplash3Visible(false); setIsSplash4Visible(true); }} />;
+  if (isSplash4Visible) return <SplashScreen4 onNext={() => { setIsSplash4Visible(false); setIsSplash5Visible(true); }} />;
+  if (isSplash5Visible) return <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />;
+  if (checkingLogin) return <SplashScreen />;
 
-  if (isSplash2Visible) {
-    return <SplashScreen2 onNext={() => {
-      setIsSplash2Visible(false);
-      setIsSplash3Visible(true);
-    }} />;
-  }
-  if (isSplash3Visible) {
-    return <SplashScreen3 onNext={() => {
-      setIsSplash3Visible(false);
-      setIsSplash4Visible(true);
-    }} />;
-  }
-  if (isSplash4Visible) {
-    return <SplashScreen4 onNext={() => setIsSplash4Visible(false)} />;
-  }
-
-  if (checkingLogin) {
-    return <SplashScreen />;
-  }
   return (
-    <StripeProvider publishableKey={stripeKey} merchantDisplayName="Basit Sanitary App">
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName={userId ? "Main" : "Login"}>
-          <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Login" options={{ headerShown: false }}>
-            {(props) => <LoginScreen {...props} setUserId={setUserId} />}
-          </Stack.Screen>
-          <Stack.Screen name="Main" options={{ headerShown: false }}>
-            {(props) => <BottomTabs {...props} />}
-          </Stack.Screen>
-          <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Checkout", ...commonHeaderOptions, }} />
-          <Stack.Screen name="AddressScreen" component={AddressScreen} />
-          <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: "Payment Methods", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="Profile" component={UserScreen} options={{ title: "Profile" }} />
-          <Stack.Screen name="Categories" component={Categories} />
-          <Stack.Screen name="Subcategories" component={Subcategories} options={{ title: "SubCategories", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="Products" component={Products} options={{ title: "Products", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Products", ...commonHeaderOptions, }} />
-          <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: "Confirm Order", ...commonHeaderOptions, }}/>
-           <Stack.Screen name="bookplumber" component={ServiceBookingForm} options={{ title: "Book Plumber", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="User" component={UserScreen} />
-          <Stack.Screen name="AccountDetail" component={AccountDetailScreen} options={{ title: "Profile Update", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="CustomerSupport" component={CustomerSupportScreen} options={{ title: "Customer Support", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="faq" component={FAQ} options={{ title: "FAQs", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="about" component={About} options={{ title: "About Us", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="StripePayment" component={StripePayment} options={{ title: "Card Payment", ...commonHeaderOptions, }}/>
-          <Stack.Screen name="Logout" component={LogoutScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </StripeProvider>
+    <AppContainer backgroundColor="#1A1A1A">
+      <StripeProvider publishableKey={stripeKey} merchantDisplayName="Basit Sanitary App">
+        <NotificationProvider>
+          <CartProvider>
+            <NavigationContainer>
+              <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "Login"}>
+                <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="Login" options={{ headerShown: false }}>
+                  {(props) => <LoginScreen {...props}  />}
+                </Stack.Screen>
+                <Stack.Screen name="Main" options={{ headerShown: false }}>
+                  {(props) => <BottomTabs {...props} />}
+                </Stack.Screen>
+
+                {/* Other Screens */}
+                <Stack.Screen name="allNotifications" component={AllNotifications} options={{ title: "All Notifications", ...commonHeaderOptions, }} />
+                <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Checkout", ...commonHeaderOptions, }} />
+                <Stack.Screen name="AddressScreen" component={AddressScreen} />
+                <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: "Payment Methods", ...commonHeaderOptions, }} />
+                <Stack.Screen name="Profile" component={UserScreen} options={{ title: "Profile" }} />
+                <Stack.Screen name="Categories" component={Categories} />
+                <Stack.Screen name="Subcategories" component={Subcategories} options={{ title: "SubCategories", ...commonHeaderOptions, }} />
+                <Stack.Screen name="Products" component={Products} options={{ title: "Products", ...commonHeaderOptions, }} />
+                <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Products", ...commonHeaderOptions, }} />
+                <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: "Confirm Order", ...commonHeaderOptions, }} />
+                <Stack.Screen name="bookplumber" component={ServiceBookingForm} options={{ title: "Book Plumber", ...commonHeaderOptions, }} />
+                <Stack.Screen name="User" component={UserScreen} />
+                <Stack.Screen name="AccountDetail" component={AccountDetailScreen} options={{ title: "Profile Update", ...commonHeaderOptions, }} />
+                <Stack.Screen name="CustomerSupport" component={CustomerSupportScreen} options={{ title: "Customer Support", ...commonHeaderOptions, }} />
+                <Stack.Screen name="faq" component={FAQ} options={{ title: "FAQs", ...commonHeaderOptions, }} />
+                <Stack.Screen name="about" component={About} options={{ title: "About Us", ...commonHeaderOptions, }} />
+                <Stack.Screen name="StripePayment" component={StripePayment} options={{ title: "Card Payment", ...commonHeaderOptions, }} />
+                <Stack.Screen name="Logout" component={LogoutScreen} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </CartProvider>
+        </NotificationProvider>
+      </StripeProvider>
+    </AppContainer>
   );
 };
 
 export default App;
-
 // ------------------ Styles ------------------
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -531,7 +357,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
 
   },
 
