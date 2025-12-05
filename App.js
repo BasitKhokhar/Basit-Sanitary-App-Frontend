@@ -235,6 +235,26 @@ const App = () => {
   const [isSplash4Visible, setIsSplash4Visible] = useState(null);
   const [isSplash5Visible, setIsSplash5Visible] = useState(null);
 
+
+  //   useEffect(() => {
+  //   const clearAppDataOnce = async () => {
+  //     try {
+  //       await AsyncStorage.clear();
+  //       console.log("✅ AsyncStorage cleared");
+
+  //       await SecureStore.deleteItemAsync("jwt_token");
+  //       await SecureStore.deleteItemAsync("userId"); // add more keys if needed
+  //       console.log("✅ SecureStore cleared");
+
+  //       console.log("📦 Storage wiped — next start will force login");
+  //     } catch (error) {
+  //       console.error("❌ Error clearing app data:", error);
+  //     }
+  //   };
+
+  //   clearAppDataOnce();
+  // }, []);
+
   // ✅ Check for valid token only
   useEffect(() => {
     const checkLogin = async () => {
