@@ -217,9 +217,9 @@ const BottomTabs = () => {
 
 export const commonHeaderOptions = {
   headerStyle: {
-    backgroundColor: colors.cardsbackground, borderBottomWidth: 1, borderColor: colors.border
+    backgroundColor:colors.headerbg, borderBottomWidth: 1, borderColor: colors.border
   },
-  headerTintColor: colors.text,
+  headerTintColor: colors.white,
   headerTitleStyle: {
     fontWeight: "bold",
   },
