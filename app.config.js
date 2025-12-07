@@ -2,9 +2,9 @@ import 'dotenv/config';
 
 export default () => ({
   expo: {
-    name: "Basit Sanitary App",
-    slug: "basit-sanitary-app",
-    owner: "basitkhokhar4949",
+    name: "basit-sanitary",
+    slug: "basit-sanitary",
+    owner: "talha3949",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon2.png",
