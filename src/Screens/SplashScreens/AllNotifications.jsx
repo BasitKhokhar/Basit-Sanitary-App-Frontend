@@ -10,7 +10,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon from "@expo/vector-icons/MaterialIcons";
 
 import { colors } from "../../../Components/Themes/colors";
 import { apiFetch } from "../../apiFetch";

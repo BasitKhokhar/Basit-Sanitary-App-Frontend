@@ -11,7 +11,7 @@ import {
   Modal,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon from "@expo/vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import SocialIconsRow from "./SocialIconsRow";
 import Loader from "../Loader/Loader";

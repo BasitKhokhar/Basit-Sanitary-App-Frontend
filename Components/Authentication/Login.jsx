@@ -19,7 +19,7 @@ WebBrowser.maybeCompleteAuthSession();
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Icon from "@expo/vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../Themes/colors";
 import bgImage from "../../assets/splash1.jpg";

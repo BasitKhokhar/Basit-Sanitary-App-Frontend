@@ -20,7 +20,7 @@ import { useNotification } from '../../src/ContextApis/NotificationsContext';
 import { colors } from '../Themes/colors';
 import { apiFetch } from '../../src/apiFetch';
 import Constants from 'expo-constants';
-import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon from "@expo/vector-icons/MaterialIcons";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 

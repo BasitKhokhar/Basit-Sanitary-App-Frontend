@@ -11,7 +11,7 @@ import {
   Platform,ActivityIndicator
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Icon from "@expo/vector-icons/FontAwesome";
 import Constants from 'expo-constants';
 import { MotiView, AnimatePresence } from "moti";
 import { Ionicons } from "@expo/vector-icons";

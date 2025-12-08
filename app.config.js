@@ -7,7 +7,7 @@ try {
 
 export default () => ({
   expo: {
-    name: "basit-sanitary",
+    name: "basitsanitary",
     slug: "basit-sanitary",
     owner: "talha3949",
     version: "1.0.0",
