@@ -1,4 +1,9 @@
-import 'dotenv/config';
+// Safely load dotenv, even if it's not installed yet
+try {
+  require('dotenv').config();
+} catch (e) {
+  console.warn('dotenv not installed, skipping .env load');
+}
 
 export default () => ({
   expo: {
@@ -33,26 +38,20 @@ export default () => ({
       "expo-secure-store",
       "expo-web-browser",
       [
-      "expo-build-properties",
-      {
-        android: {
-          kotlinVersion: "2.0.20"
+        "expo-build-properties",
+        {
+          android: { kotlinVersion: "2.0.20" }
         }
-      }
       ]
     ],
 
     extra: {
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       API_BASE_URL: process.env.API_BASE_URL,
-
       EXPO_CLIENT_ID: process.env.EXPO_CLIENT_ID,
       ANDROID_CLIENT_ID: process.env.ANDROID_CLIENT_ID,
       // IOS_CLIENT_ID: process.env.IOS_CLIENT_ID,
-
-      eas: {
-        projectId: process.env.EXPO_PROJECT_ID
-      }
+      eas: { projectId: process.env.EXPO_PROJECT_ID }
     }
   }
 });
