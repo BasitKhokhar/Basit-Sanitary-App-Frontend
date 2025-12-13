@@ -234,26 +234,6 @@ const App = () => {
   const [isSplash4Visible, setIsSplash4Visible] = useState(null);
   const [isSplash5Visible, setIsSplash5Visible] = useState(null);
 
-
-  //   useEffect(() => {
-  //   const clearAppDataOnce = async () => {
-  //     try {
-  //       await AsyncStorage.clear();
-  //       console.log("✅ AsyncStorage cleared");
-
-  //       await SecureStore.deleteItemAsync("jwt_token");
-  //       await SecureStore.deleteItemAsync("userId"); // add more keys if needed
-  //       console.log("✅ SecureStore cleared");
-
-  //       console.log("📦 Storage wiped — next start will force login");
-  //     } catch (error) {
-  //       console.error("❌ Error clearing app data:", error);
-  //     }
-  //   };
-
-  //   clearAppDataOnce();
-  // }, []);
-
   // ✅ Check for valid token only
   useEffect(() => {
     const checkLogin = async () => {
@@ -294,13 +274,65 @@ const App = () => {
     splashFlow();
   }, []);
 
-  // ✅ Splash screens handling
-  if (isSplash1Visible) return <SplashScreen1 />;
-  if (isSplash2Visible) return <SplashScreen2 onNext={() => { setIsSplash2Visible(false); setIsSplash3Visible(true); }} />;
-  if (isSplash3Visible) return <SplashScreen3 onNext={() => { setIsSplash3Visible(false); setIsSplash4Visible(true); }} />;
-  if (isSplash4Visible) return <SplashScreen4 onNext={() => { setIsSplash4Visible(false); setIsSplash5Visible(true); }} />;
-  if (isSplash5Visible) return <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />;
-  if (checkingLogin) return <SplashScreen />;
+// ✅ Splash screens handling (WRAPPED IN AppContainer)
+
+if (isSplash1Visible)
+  return (
+    <AppContainer backgroundColor="#DC143C">
+      <SplashScreen1 />
+    </AppContainer>
+  );
+
+if (isSplash2Visible)
+  return (
+    <AppContainer backgroundColor="#FFF5F5">
+      <SplashScreen2
+        onNext={() => {
+          setIsSplash2Visible(false);
+          setIsSplash3Visible(true);
+        }}
+      />
+    </AppContainer>
+  );
+
+if (isSplash3Visible)
+  return (
+    <AppContainer backgroundColor="#FFF5F5">
+      <SplashScreen3
+        onNext={() => {
+          setIsSplash3Visible(false);
+          setIsSplash4Visible(true);
+        }}
+      />
+    </AppContainer>
+  );
+
+if (isSplash4Visible)
+  return (
+    <AppContainer backgroundColor="#FFF5F5">
+      <SplashScreen4
+        onNext={() => {
+          setIsSplash4Visible(false);
+          setIsSplash5Visible(true);
+        }}
+      />
+    </AppContainer>
+  );
+
+if (isSplash5Visible)
+  return (
+    <AppContainer backgroundColor="#FFF5F5">
+      <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />
+    </AppContainer>
+  );
+
+if (checkingLogin)
+  return (
+    <AppContainer backgroundColor="#1A1A1A">
+      <SplashScreen />
+    </AppContainer>
+  );
+
 
   return (
     <AppContainer backgroundColor="#1A1A1A">
