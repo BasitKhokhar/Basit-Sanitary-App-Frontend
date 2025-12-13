@@ -1,14 +1,29 @@
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
-import { colors } from '../Themes/colors'; 
-
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+import { colors } from '../Themes/colors';
+import { useStripe } from '@stripe/stripe-react-native';
+import { apiFetch } from '../../src/apiFetch';
+import { InteractionManager } from 'react-native';
+import PaymentMethodModal from './PaymentmethodsModel';
 
 const CheckoutScreen = () => {
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [messageType, setMessageType] = useState("error");
+
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  const showMessage = (msg, type = "error") => {
+    setMessage(msg);
+    setMessageType(type);
+    setTimeout(() => setMessage(null), 3000);
+  };
+
   const navigation = useNavigation();
   const route = useRoute();
   const cartItems = route.params?.cartItems || [];
@@ -24,14 +39,70 @@ const CheckoutScreen = () => {
     const fetchUserData = async () => {
       const storedUserId = await AsyncStorage.getItem('userId');
       const storedUserEmail = await AsyncStorage.getItem('email');
-      setUserId(storedUserId ? Number(storedUserId) : null); 
+      setUserId(storedUserId ? Number(storedUserId) : null);
       setUserEmail(storedUserEmail);
     };
     fetchUserData();
   }, []);
 
+  // 1️⃣ Create payment intent
+  const createPaymentIntent = async () => {
+    try {
+      setLoading(true);
+      const response = await apiFetch(`/payments/create-payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: advancePayment,
+          currency: "usd",
+          customerEmail: userEmail,
+        }),
+      });
+      const { clientSecret } = await response.json();
+      if (!clientSecret) throw new Error("Client secret not received");
+      setClientSecret(clientSecret);
+      return clientSecret;
+    } catch (error) {
+      showMessage("Failed to initialize payment", "error");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2️⃣ Initialize and present Stripe payment sheet
+  const startStripePayment = async () => {
+    const paymentIntentClientSecret = clientSecret || await createPaymentIntent();
+    if (!paymentIntentClientSecret) return;
+
+    const { error: initError } = await initPaymentSheet({
+      paymentIntentClientSecret,
+      merchantDisplayName: "Basit Sanitary",
+      style: "automatic",
+    });
+
+    if (initError) {
+      showMessage(initError.message, "error");
+      return;
+    }
+
+    const { error: paymentError } = await presentPaymentSheet();
+
+    if (paymentError) {
+      showMessage(paymentError.message, "error");
+    } else {
+      showMessage(`Payment of $${advancePayment} was successful!`, "success");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bodybackground }]}>
+      {message && (
+        <View style={[styles.messageBox, { backgroundColor: messageType === "error" ? colors.error : colors.primary }]}>
+          <Text style={styles.messageText}>{message}</Text>
+        </View>
+      )}
+
       <FlatList
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={<Text style={[styles.header, { color: colors.text }]}>All Items</Text>}
@@ -70,15 +141,7 @@ const CheckoutScreen = () => {
 
             <TouchableOpacity
               style={[styles.paymentButton, { backgroundColor: colors.cardsbackground, borderWidth: 1.5, borderColor: colors.primary }]}
-              onPress={() => navigation.navigate('PaymentScreen', {
-                user_id: userId,
-                user_email: userEmail,
-                subtotal,
-                shipping_charges: shippingCharges,
-                total_amount: totalAmount,
-                advance_payment: advancePayment,
-                cart_items: cartItems
-              })}
+              onPress={() => setShowPaymentModal(true)}
             >
               <Text style={[styles.paymentText, { color: colors.primary }]}>Proceed to Payment</Text>
             </TouchableOpacity>
@@ -99,6 +162,16 @@ const CheckoutScreen = () => {
             </TouchableOpacity>
           </>
         }
+      />
+
+      <PaymentMethodModal
+        visible={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onCardPress={() => {
+          InteractionManager.runAfterInteractions(() => {
+            startStripePayment();
+          });
+        }}
       />
     </View>
   );
@@ -130,6 +203,8 @@ const styles = StyleSheet.create({
   paymentText: { fontSize: 16, fontWeight: 'bold' },
   formButton: { marginHorizontal: 15, marginBottom: 20, padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   formButtonText: { fontSize: 16, fontWeight: 'bold' },
+   messageBox: { padding: 10, borderRadius: 8, marginBottom: 15 },
+  messageText: { color: "#fff", textAlign: "center", fontWeight: "600" },
 });
 
 export default CheckoutScreen;

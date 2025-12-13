@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
   },
-  sectionRow: { flexDirection: "row", alignItems: "center" },
+  sectionRow: { flexDirection: "row", alignItems: "center",gap:8 },
   sectionText: { fontSize: 18 },
   iconsContainer: { marginTop: 20, marginBottom: 100 },
 

@@ -20,7 +20,6 @@ import ProductsScreen from "./Components/Products/ProductsScreen";
 import CartScreen from "./Components/Cart/CartScreen";
 import CheckoutScreen from "./Components/Cart/CheckoutScreen";
 import AddressScreen from "./Components/Cart/AddressScreen";
-import PaymentScreen from "./Components/Cart/PaymentScreen";
 import Categories from "./Components/Categories/Categories";
 import Subcategories from "./Components/Categories/Subcategories";
 import Products from "./Components/Categories/Products";
@@ -322,7 +321,7 @@ const App = () => {
                 <Stack.Screen name="allNotifications" component={AllNotifications} options={{ title: "All Notifications", ...commonHeaderOptions, }} />
                 <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Checkout", ...commonHeaderOptions, }} />
                 <Stack.Screen name="AddressScreen" component={AddressScreen} />
-                <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: "Payment Methods", ...commonHeaderOptions, }} />
+                {/* <Stack.Screen name="PaymentScreen" component={PaymentScreen} options={{ title: "Payment Methods", ...commonHeaderOptions, }} /> */}
                 <Stack.Screen name="Profile" component={UserScreen} options={{ title: "Profile" }} />
                 <Stack.Screen name="Categories" component={Categories} />
                 <Stack.Screen name="Subcategories" component={Subcategories} options={{ title: "SubCategories", ...commonHeaderOptions, }} />
