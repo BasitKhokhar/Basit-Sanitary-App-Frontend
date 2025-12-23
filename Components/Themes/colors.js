@@ -32,6 +32,6 @@ const blueNeon = { /* your old theme */ };
 const themes = { freshMint, darkOcean, lightBreeze, blueNeon };
 
 // Set active theme
-const activeTheme = "freshMint";  // 👉 your new improved theme
+const activeTheme = "freshMint";  
 
 export const colors = themes[activeTheme];
