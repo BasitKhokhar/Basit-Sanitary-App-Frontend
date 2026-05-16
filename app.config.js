@@ -8,8 +8,8 @@ try {
 export default () => ({
   expo: {
     name: "basitsanitary",
-    slug: "basit-sanitary",
-    owner: "talha3949",
+    slug: "basit-sanitary-app",
+    owner: "basitkhokhar4949",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon2.png",
@@ -38,9 +38,22 @@ export default () => ({
       "expo-secure-store",
       "expo-web-browser",
       [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.basitsanitary",
+          "enableGooglePay": true
+        }
+      ],
+      [
         "expo-build-properties",
         {
-          android: { kotlinVersion: "2.0.20" }
+          android: {
+            kotlinVersion: "2.0.20",
+            newArchEnabled: true
+          },
+          ios: {
+            newArchEnabled: true
+          }
         }
       ]
     ],
