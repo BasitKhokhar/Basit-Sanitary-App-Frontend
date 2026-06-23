@@ -1,256 +1,201 @@
+import React, { useEffect, useState, useCallback, useContext } from "react";
+import { View, FlatList, Image, Alert, StyleSheet, Pressable } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import Icon from "@expo/vector-icons/MaterialIcons";
+import { CartContext } from "../../src/ContextApis/cartContext";
+import { apiFetch } from "../../src/apiFetch";
+import { endpoints } from "../../src/services/endpoints";
 
-import React, { useEffect, useState, useCallback,useContext } from 'react';
-import { CartContext } from '../../src/ContextApis/cartContext';
-import { View, Text, FlatList, Image, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Loader from '../Loader/Loader';
-import Constants from 'expo-constants';
-import { colors } from "../Themes/colors";
-import { apiFetch } from '../../src/apiFetch';
+import AppText from "../../src/components/ui/Text";
+import Button from "../../src/components/ui/Button";
+import Card from "../../src/components/ui/Card";
+import QuantityStepper from "../../src/components/ui/QuantityStepper";
+import EmptyState from "../../src/components/ui/EmptyState";
+import { Skeleton } from "../../src/components/ui/Skeleton";
+import { colors } from "../../src/theme/colors";
+import { space } from "../../src/theme/spacing";
+import { radius } from "../../src/theme/radius";
+import { shadows } from "../../src/theme/shadows";
 
+const SHIPPING_FREE_OVER = 5000;
+
+const CartRow = React.memo(({ item, onQty, onRemove }) => (
+  <Card style={styles.row} padded={false}>
+    <Image source={{ uri: item.image_url }} style={styles.image} />
+    <View style={styles.rowInfo}>
+      <AppText variant="label" weight="700" numberOfLines={2}>{item.name}</AppText>
+      <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+        Rs {Number(item.price).toLocaleString()} each
+      </AppText>
+      <View style={styles.rowBottom}>
+        <QuantityStepper
+          value={item.quantity}
+          size="sm"
+          onChange={(q) => onQty(item.cart_id, q)}
+        />
+        <AppText variant="bodyLg" weight="800" color="brand">
+          Rs {(item.price * item.quantity).toLocaleString()}
+        </AppText>
+      </View>
+    </View>
+    <Pressable onPress={() => onRemove(item.cart_id)} style={styles.removeBtn} hitSlop={8} accessibilityLabel="Remove item">
+      <Icon name="close" size={16} color={colors.text.muted} />
+    </Pressable>
+  </Card>
+));
 
 const CartScreen = () => {
   const { fetchCartCount } = useContext(CartContext);
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalAmount, setTotalAmount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-
   const navigation = useNavigation();
 
   const fetchCartItems = async () => {
     setIsLoading(true);
     try {
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) throw new Error('User not logged in');
-
-      const response = await apiFetch(`/cart/cartitems`);
-      if (!response.ok) throw new Error('Failed to fetch cart items');
-
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) throw new Error("User not logged in");
+      const response = await apiFetch(endpoints.cart.items);
+      if (!response.ok) throw new Error("Failed to fetch cart items");
       const data = await response.json();
-      setCartItems(data);
+      setCartItems(Array.isArray(data) ? data : data.items || []);
     } catch (error) {
-      Alert.alert('Error', error.message);
+      if (__DEV__) console.warn(error.message);
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchCartItems();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { fetchCartItems(); }, []));
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchCartItems();
-    setRefreshing(false);
-  };
-
-  useEffect(() => {
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    setTotalAmount(total);
-  }, [cartItems]);
+  const handleRefresh = () => { setRefreshing(true); fetchCartItems(); };
 
   const handleRemoveFromCart = async (cartId) => {
     try {
-      const userId = await AsyncStorage.getItem('userId');
-      const response = await apiFetch(`/cart/${cartId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to remove item');
-      setCartItems(cartItems.filter((item) => item.cart_id !== cartId));
+      const response = await apiFetch(`/cart/${cartId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to remove item");
+      setCartItems((prev) => prev.filter((i) => i.cart_id !== cartId));
       fetchCartCount();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     }
   };
 
   const handleQuantityChange = async (cartId, newQuantity) => {
     if (newQuantity < 1) return;
     try {
-      const userId = await AsyncStorage.getItem('userId');
+      const userId = await AsyncStorage.getItem("userId");
       const response = await apiFetch(`/cart/${cartId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
         body: JSON.stringify({ quantity: newQuantity, user_id: userId }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update quantity');
-      }
-
-      setCartItems(prevCartItems =>
-        prevCartItems.map(item =>
-          item.cart_id === cartId ? { ...item, quantity: newQuantity } : item
-        )
-      );
+      if (!response.ok) throw new Error("Failed to update quantity");
+      setCartItems((prev) => prev.map((i) => (i.cart_id === cartId ? { ...i, quantity: newQuantity } : i)));
       fetchCartCount();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Error", error.message);
     }
   };
 
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const freeShipping = subtotal >= SHIPPING_FREE_OVER || subtotal === 0;
+
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <Loader />
+      <View style={styles.container}>
+        <View style={{ padding: space.lg }}>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={96} rounded={radius.lg} style={{ marginBottom: space.md }} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  if (!cartItems.length) {
+    return (
+      <View style={styles.container}>
+        <EmptyState
+          icon="shopping-bag"
+          title="Your cart is empty"
+          subtitle="Browse our premium sanitary collection and add items to your cart."
+          actionLabel="Start shopping"
+          onAction={() => navigation.navigate("Products")}
+        />
       </View>
     );
   }
 
   return (
-    <View style={[styles.maincontainer, { backgroundColor: colors.headerbg }]}>
-      <View style={[styles.container, { backgroundColor: colors.bodybackground }]}>
-        <Text style={[styles.header, { color: colors.text }]}>Your Cart</Text>
-
-        {cartItems.length === 0 ? (
-          <Text style={[styles.emptyCartText, { color: colors.mutedText }]}>Your cart is empty.</Text>
-        ) : (
-          <View style={styles.listContainer}>
-            <FlatList
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              data={cartItems}
-              showsVerticalScrollIndicator={false}
-              keyExtractor={(item) => item.cart_id.toString()}
-              renderItem={({ item }) => (
-                <View style={[styles.cartItem, { backgroundColor: colors.cardsbackground, borderColor: colors.border }]}>
-                  <View style={styles.productDetails}>
-                    <Image source={{ uri: item.image_url }} style={styles.image} />
-                    <View>
-                      <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
-                      <Text style={[styles.itemPrice, { color: colors.mutedText }]}>Price: {item.price} </Text>
-                      <Text style={[styles.itemTotal, { color: colors.accent }]}>Total: {item.price * item.quantity} </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.quantityContainer}>
-                    <TouchableOpacity onPress={() => handleQuantityChange(item.cart_id, item.quantity - 1)} style={[styles.button, { backgroundColor: colors.secondary }]}>
-                      <Text style={[styles.buttonText, { color: colors.text }]}>-</Text>
-                    </TouchableOpacity>
-                    <Text style={[styles.quantityText, { color: colors.text }]}>{item.quantity}</Text>
-                    <TouchableOpacity onPress={() => handleQuantityChange(item.cart_id, item.quantity + 1)} style={[styles.button, { backgroundColor: colors.secondary }]}>
-                      <Text style={[styles.buttonText, { color: colors.text }]}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity onPress={() => handleRemoveFromCart(item.cart_id)} style={[styles.removeButton, { backgroundColor: colors.error }]}>
-                    <Text style={[styles.buttonText, { color: colors.white }]}>X</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          </View>
+    <View style={styles.container}>
+      <FlatList
+        data={cartItems}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={(item) => String(item.cart_id)}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <AppText variant="h2" style={{ marginBottom: space.lg }}>
+            Your Cart ({cartItems.length})
+          </AppText>
+        }
+        ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
+        renderItem={({ item }) => (
+          <CartRow item={item} onQty={handleQuantityChange} onRemove={handleRemoveFromCart} />
         )}
+      />
 
-        <Text style={[styles.totalAmount, { color: colors.text }]}>Total: {totalAmount} Rupees</Text>
-
-        <TouchableOpacity style={[styles.checkoutButton, { backgroundColor: colors.text }]} onPress={() => navigation.navigate('Checkout', { cartItems, totalAmount })}>
-          <Text style={[styles.checkoutText, { color: colors.white }]}>Checkout</Text>
-        </TouchableOpacity>
+      {/* Summary */}
+      <View style={styles.summary}>
+        <View style={styles.summaryRow}>
+          <AppText variant="body" color="secondary">Subtotal</AppText>
+          <AppText variant="bodyLg" weight="700">Rs {subtotal.toLocaleString()}</AppText>
+        </View>
+        <View style={styles.summaryRow}>
+          <AppText variant="body" color="secondary">Shipping</AppText>
+          <AppText variant="label" weight="700" color={freeShipping ? "success" : "primary"}>
+            {freeShipping ? "FREE" : "Calculated at checkout"}
+          </AppText>
+        </View>
+        <View style={[styles.summaryRow, styles.totalRow]}>
+          <AppText variant="h3">Total</AppText>
+          <AppText variant="h2" color="brand" weight="800">Rs {subtotal.toLocaleString()}</AppText>
+        </View>
+        <Button
+          title="Proceed to Checkout"
+          iconRight="arrow-forward"
+          onPress={() => navigation.navigate("Checkout", { cartItems, totalAmount: subtotal })}
+        />
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  maincontainer: { paddingTop: 30, width: '100%', height: '100%' },
-  container: {
-    flex: 1,
-    padding: 16,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    marginHorizontal: 10,
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  list: { padding: space.lg, paddingBottom: 280 },
+  row: { flexDirection: "row", alignItems: "center", padding: space.md },
+  image: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.bg.sunken },
+  rowInfo: { flex: 1, marginLeft: space.md },
+  rowBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: space.md },
+  removeBtn: {
+    position: "absolute", top: space.sm, right: space.sm,
+    width: 26, height: 26, borderRadius: radius.pill,
+    backgroundColor: colors.bg.sunken, justifyContent: "center", alignItems: "center",
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
+  summary: {
+    position: "absolute", left: 0, right: 0, bottom: 0,
+    backgroundColor: colors.bg.surface,
+    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+    padding: space.xl, paddingBottom: 110,
+    ...shadows.e4,
   },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  listContainer: {
-    flex: 1,
-    maxHeight: 400,
-  },
-  cartItem: {
-    flexDirection: 'row',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  productDetails: {
-    flexDirection: 'row',
-    flex: 2,
-    alignItems: 'center',
-  },
-  image: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  itemName: { fontWeight: 'bold' },
-  itemPrice: { fontSize: 14 },
-  itemTotal: { fontSize: 14, fontWeight: 'bold' },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 15,
-  },
-  button: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginHorizontal: 5,
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  quantityText: { fontSize: 16, fontWeight: 'bold' },
-  removeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 5,
-  },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginVertical: 10,
-  },
-  checkoutButton: {
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  checkoutText: { fontSize: 16, fontWeight: 'bold' },
-  emptyCartText: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 20,
-  },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: space.sm },
+  totalRow: { marginTop: space.sm, marginBottom: space.lg, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.border.subtle },
 });
 
 export default CartScreen;

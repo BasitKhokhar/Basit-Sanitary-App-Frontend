@@ -1,37 +1,41 @@
+// ============================================================================
+// BACK-COMPAT SHIM
+// The real design system now lives in src/theme/. This file maps the OLD
+// flat `colors` keys onto the new deep-emerald palette so every existing
+// `import { colors } from ".../Themes/colors"` keeps working unchanged.
+//
+// NEW code should import from "src/theme" instead:
+//   import { theme, colors as tokens } from "../../src/theme";
+// ============================================================================
 
-// Fresh green theme perfectly matching #F8F9FA body & #1A1A1A header/footer
-const freshMint = {
-  bodybackground: "#F8F9FA",      
-  cardsbackground: "#FFFFFF",
-  primary: "#00C96D",            
-  accent: "#009E5A",    
-  secondary: "#E0E0E0",
-  text: "#1A1A1A",                 
-  mutedText: "#6C757D",
-  border: "#D1D1D1",
-  error: "#FF3B30",
-  headerbg: "#1A1A1A",
-  formbg: "#0d0d0d",
-  white:"#FFFFFF",
+import { colors as t } from "../../src/theme/colors";
+
+export const colors = {
+  // --- legacy flat keys (mapped to new semantic tokens) ---
+  bodybackground: t.bg.canvas,
+  cardsbackground: t.bg.surface,
+  primary: t.brand.primary,
+  accent: t.brand.primaryDark,
+  secondary: t.border.default,
+  text: t.text.primary,
+  mutedText: t.text.muted,
+  border: t.border.default,
+  error: t.status.error,
+  headerbg: t.bg.inverse,
+  formbg: t.palette.ink,
+  white: t.text.onPrimary,
+
+  // legacy gradient names → new emerald gradients
   gradients: {
-    ocean: ["#009E5A", "#00C96D"],                
-    mintGlow: ["#00E39F", "#00C96D"],         
-    aquaPulse: ["#00FFCC", "#00C884"],            
-    deepTech: ["#F8F9FA", "#E4E6EB"],  
-    dark:  ["#232526", "#414345"],  
-    // dark:  ["#0f0c29", "#302b63", "#24243e"],          
+    ocean: t.gradients.emeraldDeep,
+    mintGlow: t.gradients.emeraldGlow,
+    aquaPulse: t.gradients.emeraldGlow,
+    deepTech: t.gradients.canvas,
+    dark: t.gradients.dark,
   },
+
+  // expose the full new token tree too, for gradual migration
+  tokens: t,
 };
 
-// Keep previously created themes (optional)
-const darkOcean = { /* your old theme */ };
-const lightBreeze = { /* your old theme */ };
-const blueNeon = { /* your old theme */ };
-
-// Register themes
-const themes = { freshMint, darkOcean, lightBreeze, blueNeon };
-
-// Set active theme
-const activeTheme = "freshMint";  
-
-export const colors = themes[activeTheme];
+export default colors;

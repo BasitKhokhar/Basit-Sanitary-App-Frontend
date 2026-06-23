@@ -1,30 +1,30 @@
-
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-} from "react-native";
-import OnSaleProducts from "./Products/OnSaleProducts";
-import Completesets from "./Products/Completesets";
-import TrendingProducts from "./Products/TrendingProducts";
+import React, { useEffect, useState, useContext, useCallback } from "react";
+import { View, FlatList, StyleSheet } from "react-native";
 import ShopLocation from "./Services/ShopLocation";
 import Categories from "./Categories/Categories";
 import ImageSlider from "./Sliders/Slider";
 import UserNameDisplay from "./User/UserNameDisplay";
 import BrandSlider from "./Sliders/BrandSlider";
 import CustomerSupportoptions from "./User/CustomerSupportoptions";
-import Loader from "./Loader/Loader";
-import Constants from "expo-constants";
 import { apiFetch } from "../src/apiFetch";
 
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+import { useNavigation } from "@react-navigation/native";
+import { CartContext } from "../src/ContextApis/cartContext";
+import { useWishlist } from "../src/ContextApis/WishlistContext";
+import { endpoints } from "../src/services/endpoints";
+import ProductCarousel from "../src/components/commerce/ProductCarousel";
+import { Skeleton } from "../src/components/ui/Skeleton";
+import AppText from "../src/components/ui/Text";
+import { colors } from "../src/theme/colors";
+import { space } from "../src/theme/spacing";
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = () => {
+  const navigation = useNavigation();
+  const { fetchCartCount } = useContext(CartContext);
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   const [homeData, setHomeData] = useState({
     sliderData: [],
     categoryData: [],
@@ -36,18 +36,11 @@ const HomeScreen = ({ navigation }) => {
     secondColumnData: [],
   });
 
-  useEffect(() => {
-    if (navigation) {
-      navigation.setOptions({ headerShown: false });
-    }
-  }, []);
-
-  // ⭐ Updated: fetch using apiFetch
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const endpoints = [
-        { key: "sliderData", url: "/content/sliderimages" },
-        { key: "categoryData", url: "/products/categories" },
+      const eps = [
+        { key: "sliderData", url: endpoints.content.sliderImages },
+        { key: "categoryData", url: endpoints.products.categories },
         { key: "onSaleProducts", url: "/products/onsale" },
         { key: "brandData", url: "/content/brands" },
         { key: "trendingProducts", url: "/products/trending" },
@@ -57,33 +50,26 @@ const HomeScreen = ({ navigation }) => {
       ];
 
       const responses = await Promise.all(
-        endpoints.map(async (endpoint) => {
+        eps.map(async (e) => {
           try {
-            const res = await apiFetch(endpoint.url, {}, navigation);
+            const res = await apiFetch(e.url, {}, navigation);
             const data = await res.json();
-            return { key: endpoint.key, data };
+            return { key: e.key, data };
           } catch {
-            return { key: endpoint.key, data: [] };
+            return { key: e.key, data: [] };
           }
         })
       );
 
-      const updated = responses.reduce((acc, { key, data }) => {
-        acc[key] = data;
-        return acc;
-      }, {});
-
-      setHomeData(updated);
+      setHomeData(responses.reduce((acc, { key, data }) => ((acc[key] = data), acc), {}));
     } catch (error) {
-      console.error("Home data fetch error:", error);
+      if (__DEV__) console.error("Home data fetch error:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigation]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -91,17 +77,34 @@ const HomeScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const handleScroll = (event) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    if (offsetY <= 0) {
-      handleRefresh();
+  const handleAddToCart = async (product) => {
+    try {
+      await apiFetch(endpoints.cart.add, {
+        method: "POST",
+        body: JSON.stringify({ ...product, quantity: 1, selectedColor: "None" }),
+      });
+      fetchCartCount();
+    } catch (e) {
+      if (__DEV__) console.warn("add to cart failed", e);
     }
+  };
+
+  const carouselProps = {
+    onAddToCart: handleAddToCart,
+    isWishlisted,
+    onToggleWishlist: toggleWishlist,
+    onSeeAll: () => navigation.navigate("Products"),
   };
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <Loader />
+      <View style={styles.skeletonWrap}>
+        <Skeleton height={180} style={{ marginBottom: space.lg }} />
+        <View style={styles.skelRow}>
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} width={64} height={64} rounded={16} />)}
+        </View>
+        <Skeleton height={220} style={{ marginTop: space.xl }} />
+        <Skeleton height={220} style={{ marginTop: space.lg }} />
       </View>
     );
   }
@@ -110,21 +113,29 @@ const HomeScreen = ({ navigation }) => {
     { key: "user", render: () => <UserNameDisplay /> },
     { key: "slider", render: () => <ImageSlider sliderData={homeData.sliderData} /> },
     { key: "categories", render: () => <Categories categoriesData={homeData.categoryData} /> },
-    { key: "onSale", render: () => <OnSaleProducts products={homeData.onSaleProducts} /> },
+    {
+      key: "onSale",
+      render: () =>
+        homeData.onSaleProducts?.length ? (
+          <ProductCarousel title="On Sale" subtitle="Limited-time premium offers" data={homeData.onSaleProducts} {...carouselProps} />
+        ) : null,
+    },
     { key: "brands", render: () => <BrandSlider brands={homeData.brandData} /> },
     {
       key: "trending",
-      render: () => (
-        <>
-          <Text style={styles.sectionTitle}>Trending Products</Text>
-          <TrendingProducts products={homeData.trendingProducts} />
-        </>
-      ),
+      render: () =>
+        homeData.trendingProducts?.length ? (
+          <ProductCarousel title="Trending Now" subtitle="What customers love" data={homeData.trendingProducts} {...carouselProps} />
+        ) : null,
     },
     {
       key: "completeSets",
-      render: () => <Completesets sets={homeData.completeSets} />,
+      render: () =>
+        homeData.completeSets?.length ? (
+          <ProductCarousel title="Complete Sets" subtitle="Curated bathroom collections" data={homeData.completeSets} {...carouselProps} />
+        ) : null,
     },
+    { key: "location", render: () => <ShopLocation /> },
     {
       key: "support",
       render: () => (
@@ -143,12 +154,10 @@ const HomeScreen = ({ navigation }) => {
       renderItem={({ item }) => <View>{item.render()}</View>}
       contentContainerStyle={styles.listContainer}
       showsVerticalScrollIndicator={false}
-      initialNumToRender={2}
+      initialNumToRender={3}
       windowSize={5}
       maxToRenderPerBatch={3}
       updateCellsBatchingPeriod={100}
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
       refreshing={refreshing}
       onRefresh={handleRefresh}
     />
@@ -156,21 +165,9 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  listContainer: {
-    paddingBottom: 120,
-    backgroundColor: "#F8F9FA",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 20,
-  },
+  listContainer: { paddingBottom: 120, backgroundColor: colors.bg.canvas },
+  skeletonWrap: { flex: 1, padding: space.lg, backgroundColor: colors.bg.canvas },
+  skelRow: { flexDirection: "row", justifyContent: "space-between", marginTop: space.lg },
 });
 
 export default HomeScreen;

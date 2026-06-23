@@ -1,29 +1,37 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
   Image,
   ScrollView,
   RefreshControl,
   Modal,
+  Pressable,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import SocialIconsRow from "./SocialIconsRow";
-import Loader from "../Loader/Loader";
-import Constants from "expo-constants";
-import { colors } from "../Themes/colors";
 import { apiFetch } from "../../src/apiFetch";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+import { CartContext } from "../../src/ContextApis/cartContext";
+import { useWishlist } from "../../src/ContextApis/WishlistContext";
+import AppText from "../../src/components/ui/Text";
+import Button from "../../src/components/ui/Button";
+import Card from "../../src/components/ui/Card";
+import { Skeleton } from "../../src/components/ui/Skeleton";
+import { colors } from "../../src/theme/colors";
+import { space } from "../../src/theme/spacing";
+import { radius } from "../../src/theme/radius";
+import { shadows } from "../../src/theme/shadows";
 
 const UserScreen = () => {
+  const navigation = useNavigation();
+  const { cartCount } = useContext(CartContext);
+  const { count: wishlistCount } = useWishlist();
+
   const [userData, setUserData] = useState(null);
   const [userImage, setUserImage] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,13 +39,9 @@ const UserScreen = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
 
-  const navigation = useNavigation();
-
-  // Fetch User Data
   const fetchUserData = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem("userId");
-
       if (storedUserId) {
         const response = await apiFetch(`/users/getuserdetails`);
         const data = await response.json();
@@ -50,15 +54,13 @@ const UserScreen = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      if (__DEV__) console.error("Error fetching user data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  useEffect(() => { fetchUserData(); }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -69,294 +71,175 @@ const UserScreen = () => {
   const handleOpenPdf = async (id) => {
     setShowLoader(true);
     const res = await apiFetch(`/content/pdf-files/${id}`);
-
-    if (res?.url) {
-      setShowLoader(false);
-      Linking.openURL(res.url);
-    } else {
-      setShowLoader(false);
-      alert("PDF not found");
-    }
+    setShowLoader(false);
+    if (res?.url) Linking.openURL(res.url);
+    else alert("PDF not found");
   };
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.multiRemove([
-        "userId",
-        "email",
-        "hasSeenGuide",
-        "hasSeenSearchHeaderTour",
-      ]);
+      await AsyncStorage.multiRemove(["userId", "email", "hasSeenGuide", "hasSeenSearchHeaderTour"]);
       await SecureStore.deleteItemAsync("accessToken");
       await SecureStore.deleteItemAsync("refreshToken");
-
       setShowLogoutModal(false);
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     } catch (error) {
-      console.log("Logout Error:", error);
+      if (__DEV__) console.log("Logout Error:", error);
     }
   };
 
+  const quickStats = [
+    { label: "Orders", icon: "receipt-long", onPress: () => navigation.navigate("Orders") },
+    { label: "Wishlist", icon: "favorite", value: wishlistCount, onPress: () => navigation.navigate("Wishlist") },
+    { label: "Cart", icon: "shopping-bag", value: cartCount, onPress: () => navigation.navigate("Main") },
+  ];
+
+  const menu = [
+    { label: "My Orders", icon: "receipt-long", onPress: () => navigation.navigate("Orders") },
+    { label: "My Wishlist", icon: "favorite-border", onPress: () => navigation.navigate("Wishlist") },
+    { label: "Account Detail", icon: "person-outline", onPress: () => navigation.navigate("AccountDetail", { userData }) },
+    { label: "Customer Support", icon: "support-agent", onPress: () => navigation.navigate("CustomerSupport") },
+    { label: "FAQs", icon: "help-outline", onPress: () => navigation.navigate("faq") },
+    { label: "About App", icon: "info-outline", onPress: () => handleOpenPdf(1) },
+    { label: "Privacy Policy", icon: "security", onPress: () => handleOpenPdf(2) },
+  ];
+
   return (
-    <View style={styles.mainContainer}>
-      {/* Loader while opening PDF */}
+    <View style={styles.container}>
       {showLoader && (
         <View style={styles.loaderOverlay}>
           <View style={styles.loaderBox}>
-            <Loader />
-            <Text style={{ color: colors.text, marginTop: 10 }}>
-              Please wait...
-            </Text>
+            <AppText variant="body" color="secondary">Please wait…</AppText>
           </View>
         </View>
       )}
-      <View style={{flex:1}}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {loading ? (
-            <View style={styles.loaderContainer}>
-              <Loader />
+
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.brand.primary} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile header */}
+        {loading ? (
+          <Skeleton height={120} rounded={radius.xl} style={{ marginBottom: space.lg }} />
+        ) : (
+          <Card style={styles.profileCard}>
+            <View style={styles.avatar}>
+              {userImage && userImage.startsWith("http") ? (
+                <Image source={{ uri: userImage }} style={styles.avatarImg} onError={() => setUserImage(null)} />
+              ) : (
+                <Icon name="person" size={32} color={colors.brand.primary} />
+              )}
             </View>
-          ) : (
-            <View style={styles.profileContainer}>
-              {/* Profile Header */}
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>
-                  {userData?.email || "Guest User"}
-                </Text>
-
-                <View style={styles.imageContainer}>
-                  {userImage && userImage.startsWith("http") ? (
-                    <Image
-                      source={{ uri: userImage }}
-                      style={styles.profileImage}
-                      onError={() => setUserImage(null)}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.defaultProfileCircle,
-                        {
-                          borderColor: colors.text,
-                          backgroundColor: colors.white,
-                        },
-                      ]}
-                    />
-                  )}
-                </View>
-              </View>
-
-              {/* Navigation Sections (Always Visible) */}
-              {[
-                { label: "Account Detail", icon: "person", navigate: "AccountDetail" },
-                {
-                  label: "Customer Support",
-                  icon: "support-agent",
-                  navigate: "CustomerSupport",
-                },
-                { label: "FAQs", icon: "help-outline", navigate: "faq" },
-              ].map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.section, { borderBottomColor: colors.border }]}
-                  onPress={() => navigation.navigate(item.navigate, { userData })}
-                >
-                  <View style={styles.sectionRow}>
-                    <Icon name={item.icon} size={24} color={colors.text} />
-                    <Text style={[styles.sectionText, { color: colors.text }]}>
-                      {item.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-
-              {/* PDF Buttons */}
-              <TouchableOpacity
-                style={[styles.section, { borderBottomColor: colors.border }]}
-                onPress={() => handleOpenPdf(1)}
-              >
-                <View style={styles.sectionRow}>
-                  <Icon name="info-outline" size={24} color={colors.text} />
-                  <Text style={[styles.sectionText, { color: colors.text }]}>
-                    About App
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.section, { borderBottomColor: colors.border }]}
-                onPress={() => handleOpenPdf(2)}
-              >
-                <View style={styles.sectionRow}>
-                  <Icon name="security" size={24} color={colors.text} />
-                  <Text style={[styles.sectionText, { color: colors.text }]}>
-                    Privacy Policy
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Logout */}
-              <TouchableOpacity
-                style={styles.section}
-                onPress={() => setShowLogoutModal(true)}
-              >
-                <View style={styles.sectionRow}>
-                  <Icon name="logout" size={24} color={colors.error} />
-                  <Text style={[styles.sectionText, { color: colors.error }]}>
-                    Logout
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Social Icons */}
-              <View style={styles.iconsContainer}>
-                <SocialIconsRow />
-              </View>
-
-              {/* Logout Modal */}
-              <Modal transparent visible={showLogoutModal} animationType="fade">
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Confirm Logout</Text>
-                    <Text style={styles.modalMessage}>
-                      Are you sure you want to logout?
-                    </Text>
-                    <View style={styles.modalButtons}>
-                      <TouchableOpacity
-                        style={[
-                          styles.modalBtn,
-                          { backgroundColor: colors.border },
-                        ]}
-                        onPress={() => setShowLogoutModal(false)}
-                      >
-                        <Text style={{ color: colors.text }}>Cancel</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.modalBtn,
-                          { backgroundColor: colors.error },
-                        ]}
-                        onPress={handleLogout}
-                      >
-                        <Text style={{ color: colors.white }}>Logout</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </Modal>
+            <View style={{ flex: 1, marginLeft: space.lg }}>
+              <AppText variant="caption" color="muted">Welcome back</AppText>
+              <AppText variant="h3" numberOfLines={1}>{userData?.name || userData?.email || "Guest User"}</AppText>
             </View>
-          )}
-        </ScrollView>
-      </View>
+          </Card>
+        )}
 
+        {/* Quick stats */}
+        <View style={styles.statsRow}>
+          {quickStats.map((s) => (
+            <Pressable key={s.label} style={styles.stat} onPress={s.onPress} accessibilityRole="button">
+              <View style={styles.statIcon}>
+                <Icon name={s.icon} size={20} color={colors.brand.primary} />
+                {s.value > 0 ? (
+                  <View style={styles.statBadge}>
+                    <AppText variant="micro" weight="800" style={{ color: colors.text.onPrimary }}>{s.value}</AppText>
+                  </View>
+                ) : null}
+              </View>
+              <AppText variant="caption" color="secondary" weight="600" style={{ marginTop: space.xs }}>{s.label}</AppText>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Menu */}
+        <Card padded={false} style={styles.menuCard}>
+          {menu.map((item, i) => (
+            <Pressable
+              key={item.label}
+              style={[styles.menuRow, i < menu.length - 1 && styles.menuDivider]}
+              onPress={item.onPress}
+              accessibilityRole="button"
+            >
+              <View style={styles.menuIcon}>
+                <Icon name={item.icon} size={20} color={colors.brand.primaryDark} />
+              </View>
+              <AppText variant="bodyLg" style={{ flex: 1 }}>{item.label}</AppText>
+              <Icon name="chevron-right" size={22} color={colors.text.muted} />
+            </Pressable>
+          ))}
+        </Card>
+
+        <Button
+          title="Logout"
+          variant="ghost"
+          icon="logout"
+          onPress={() => setShowLogoutModal(true)}
+          style={{ marginTop: space.xl, borderColor: colors.status.error }}
+        />
+
+        <View style={styles.socials}>
+          <SocialIconsRow />
+        </View>
+      </ScrollView>
+
+      {/* Logout modal */}
+      <Modal transparent visible={showLogoutModal} animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modalContent}>
+            <AppText variant="h3">Confirm Logout</AppText>
+            <AppText variant="body" color="secondary" style={{ marginTop: space.sm, marginBottom: space.xl }}>
+              Are you sure you want to logout?
+            </AppText>
+            <View style={styles.modalButtons}>
+              <Button title="Cancel" variant="secondary" onPress={() => setShowLogoutModal(false)} style={{ flex: 1, marginRight: space.sm }} />
+              <Button title="Logout" variant="danger" onPress={handleLogout} style={{ flex: 1, marginLeft: space.sm }} />
+            </View>
+          </Card>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-// -----------------------
-// STYLES
-// -----------------------
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: colors.headerbg,
-    paddingTop: 30,
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  scroll: { padding: space.lg, paddingBottom: 120 },
+  profileCard: { flexDirection: "row", alignItems: "center", marginBottom: space.lg },
+  avatar: {
+    width: 60, height: 60, borderRadius: radius.pill,
+    backgroundColor: colors.brand.tint, justifyContent: "center", alignItems: "center", overflow: "hidden",
   },
-  scrollContent: {
-    padding: 16,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingBottom: 20,
-    backgroundColor: colors.bodybackground,
+  avatarImg: { width: "100%", height: "100%" },
+  statsRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: space.lg, gap: space.md },
+  stat: {
+    flex: 1, alignItems: "center", paddingVertical: space.lg,
+    backgroundColor: colors.bg.surface, borderRadius: radius.lg, ...shadows.e1,
   },
-  loaderContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    height: 300,
+  statIcon: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: colors.brand.tint, justifyContent: "center", alignItems: "center" },
+  statBadge: {
+    position: "absolute", top: -4, right: -6, minWidth: 18, height: 18, paddingHorizontal: 4,
+    borderRadius: radius.pill, backgroundColor: colors.status.error, justifyContent: "center", alignItems: "center",
   },
-  profileContainer: { width: "100%" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 15,
-    marginBottom: 50,
-    justifyContent: "space-between",
-    width: "100%",
+  menuCard: { overflow: "hidden" },
+  menuRow: { flexDirection: "row", alignItems: "center", paddingVertical: space.lg, padding: space.lg },
+  menuDivider: { borderBottomWidth: 1, borderBottomColor: colors.border.subtle },
+  menuIcon: {
+    width: 38, height: 38, borderRadius: radius.md, backgroundColor: colors.bg.sunken,
+    justifyContent: "center", alignItems: "center", marginRight: space.md,
   },
-  title: { fontSize: 20, fontWeight: "bold" },
-  section: {
-    width: "100%",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-  },
-  sectionRow: { flexDirection: "row", alignItems: "center",gap:8 },
-  sectionText: { fontSize: 18 },
-  iconsContainer: { marginTop: 20, marginBottom: 100 },
-
-  // Image
-  imageContainer: { width: 50, height: 50, borderRadius: 50, overflow: "hidden" },
-  profileImage: { width: "100%", height: "100%", borderRadius: 50 },
-  defaultProfileCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 50,
-    borderWidth: 2,
-  },
-
-  // Loader overlay
+  socials: { marginTop: space.xl, alignItems: "center" },
   loaderOverlay: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#00000080",
-    zIndex: 999,
-    justifyContent: "center",
-    alignItems: "center",
+    position: "absolute", width: "100%", height: "100%",
+    backgroundColor: "rgba(12,26,20,0.5)", zIndex: 999, justifyContent: "center", alignItems: "center",
   },
-  loaderBox: {
-    backgroundColor: colors.cardsbackground,
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  // Logout Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "#00000060",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "80%",
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: colors.cardsbackground,
-  },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: colors.text },
-  modalMessage: { fontSize: 16, marginTop: 10, color: colors.text },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  modalBtn: {
-    width: "45%",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
+  loaderBox: { backgroundColor: colors.bg.surface, padding: space.xl, borderRadius: radius.lg, alignItems: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(12,26,20,0.55)", justifyContent: "center", alignItems: "center", padding: space.xl },
+  modalContent: { width: "100%" },
+  modalButtons: { flexDirection: "row" },
 });
 
 export default UserScreen;

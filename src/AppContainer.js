@@ -9,14 +9,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
  * - Handles SafeArea for left/right
  * - Provides consistent background
  */
-const AppContainer = ({ children, backgroundColor = "#F8F9FA" }) => {
+const AppContainer = ({ children, backgroundColor = "#F8F9FA", barStyle = "light-content" }) => {
   return (
     <View style={[styles.root, { backgroundColor }]}>
       {/* Transparent StatusBar so header can overlap */}
       <StatusBar
         translucent
         backgroundColor="transparent"
-        barStyle="light-content" // light-content if you use dark headers
+        barStyle={barStyle} // dark-content over light surfaces, light-content over dark
       />
 
       {/* SafeArea protects sides but not top/bottom (so header/footer can extend) */}

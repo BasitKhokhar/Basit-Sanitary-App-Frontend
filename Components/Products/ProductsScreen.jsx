@@ -1,29 +1,46 @@
-
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import {
   View,
-  Text,
-  Image,
   FlatList,
   StyleSheet,
-  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
   Dimensions,
+  Pressable,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import DropDownPicker from "react-native-dropdown-picker";
+import Icon from "@expo/vector-icons/MaterialIcons";
 import ProductModal from "./ProductModal";
-import Loader from "../Loader/Loader";
 import { apiFetch } from "../../src/apiFetch";
-import { colors } from "../Themes/colors";
-import { MotiView } from "moti";
+import { endpoints } from "../../src/services/endpoints";
+import { CartContext } from "../../src/ContextApis/cartContext";
+import { useWishlist } from "../../src/ContextApis/WishlistContext";
+import ProductCard from "../../src/components/commerce/ProductCard";
+import { ProductCardSkeleton } from "../../src/components/ui/Skeleton";
+import AppText from "../../src/components/ui/Text";
+import Sheet from "../../src/components/ui/Sheet";
+import EmptyState from "../../src/components/ui/EmptyState";
+import { colors } from "../../src/theme/colors";
+import { space } from "../../src/theme/spacing";
+import { radius } from "../../src/theme/radius";
+import { shadows } from "../../src/theme/shadows";
 
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 45) / 2;
+const GAP = space.lg;
+const CARD_WIDTH = (width - GAP * 3) / 2;
 const PAGE_SIZE = 10;
 
+const SORTS = [
+  { label: "Name: A to Z", value: "az" },
+  { label: "Name: Z to A", value: "za" },
+  { label: "Price: Low to High", value: "priceLowHigh" },
+  { label: "Price: High to Low", value: "priceHighLow" },
+];
+
 const ProductsScreen = () => {
+  const { fetchCartCount } = useContext(CartContext);
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -33,26 +50,25 @@ const ProductsScreen = () => {
 
   const [userId, setUserId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-
   const [sortOrder, setSortOrder] = useState("az");
-  const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
-    { label: "Sort: A to Z", value: "az" },
-    { label: "Sort: Z to A", value: "za" },
-    { label: "Sort: Price Low to High", value: "priceLowHigh" },
-    { label: "Sort: Price High to Low", value: "priceHighLow" },
-  ]);
+  const [sortOpen, setSortOpen] = useState(false);
 
   useEffect(() => {
-    const getUserId = async () => {
+    (async () => {
       try {
         const storedUserId = await AsyncStorage.getItem("userId");
         if (storedUserId) setUserId(storedUserId);
-      } catch (error) {
-        console.error("Error retrieving user ID:", error);
-      }
-    };
-    getUserId();
+      } catch (e) {}
+    })();
+  }, []);
+
+  const sortList = useCallback((list, order) => {
+    const arr = [...list];
+    if (order === "az") arr.sort((a, b) => a.name.localeCompare(b.name));
+    else if (order === "za") arr.sort((a, b) => b.name.localeCompare(a.name));
+    else if (order === "priceLowHigh") arr.sort((a, b) => a.price - b.price);
+    else if (order === "priceHighLow") arr.sort((a, b) => b.price - a.price);
+    return arr;
   }, []);
 
   const fetchProducts = useCallback(
@@ -61,32 +77,26 @@ const ProductsScreen = () => {
         if (pageNum === 1) setLoading(true);
         else setLoadingMore(true);
 
-        const res = await apiFetch(`/products/allproducts?page=${pageNum}&limit=${PAGE_SIZE}`);
+        const res = await apiFetch(endpoints.products.all(pageNum, PAGE_SIZE));
         if (!res.ok) throw new Error("Failed to fetch products");
 
         const data = await res.json();
-        let fetchedProducts = data.products || [];
+        const fetched = sortList(data.products || [], sortOrder);
 
-        // Sorting
-        if (sortOrder === "az") fetchedProducts.sort((a, b) => a.name.localeCompare(b.name));
-        else if (sortOrder === "za") fetchedProducts.sort((a, b) => b.name.localeCompare(a.name));
-        else if (sortOrder === "priceLowHigh") fetchedProducts.sort((a, b) => a.price - b.price);
-        else if (sortOrder === "priceHighLow") fetchedProducts.sort((a, b) => b.price - a.price);
-
-        if (pageNum === 1) setProducts(fetchedProducts);
-        else setProducts((prev) => [...prev, ...fetchedProducts]);
+        if (pageNum === 1) setProducts(fetched);
+        else setProducts((prev) => [...prev, ...fetched]);
 
         setHasMore(data.hasMore);
         setPage(pageNum);
       } catch (err) {
-        console.error("Error fetching products:", err);
+        if (__DEV__) console.error("Error fetching products:", err);
       } finally {
         setLoading(false);
         setLoadingMore(false);
         setRefreshing(false);
       }
     },
-    [sortOrder]
+    [sortOrder, sortList]
   );
 
   useEffect(() => {
@@ -103,99 +113,133 @@ const ProductsScreen = () => {
     fetchProducts(page + 1);
   };
 
-  const openProductModal = (product) => setSelectedProduct(product);
+  const handleAddToCart = async (product) => {
+    try {
+      await apiFetch(endpoints.cart.add, {
+        method: "POST",
+        body: JSON.stringify({ ...product, quantity: 1, user_id: userId, selectedColor: "None" }),
+      });
+      fetchCartCount();
+    } catch (e) {
+      if (__DEV__) console.warn("add to cart failed", e);
+    }
+  };
 
-  const renderSkeleton = () => (
-    <MotiView
-      from={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "timing", duration: 400 }}
-      style={[styles.productCard, { height: 180, justifyContent: "center", alignItems: "center" }]}
-    >
-      <Loader />
-    </MotiView>
-  );
+  const pickSort = (value) => {
+    setSortOrder(value);
+    setSortOpen(false);
+    setProducts((prev) => sortList(prev, value));
+  };
 
-  const renderItem = ({ item }) => (
-    <View style={[styles.productCard, { backgroundColor: colors.cardsbackground }]}>
-      <Image source={{ uri: item.image_url }} style={styles.productImage} />
-      <Text style={[styles.productName, { color: colors.text }]}>{item.name}</Text>
-      <Text style={[styles.productStock, { color: colors.mutedText }]}>Stock: {item.stock}</Text>
-      <Text style={[styles.productPrice, { color: colors.primary }]}>Price: {Math.floor(item.price)}</Text>
-      <TouchableOpacity
-        onPress={() => openProductModal(item)}
-        style={[styles.shopNowButton, { backgroundColor: colors.text }]}
-      >
-        <Text style={[styles.shopNowText, { color: colors.white }]}>Shop Now</Text>
-      </TouchableOpacity>
+  const renderHeader = () => (
+    <View style={styles.toolbar}>
+      <View>
+        <AppText variant="h2">All Products</AppText>
+        <AppText variant="caption" color="muted">{products.length} items</AppText>
+      </View>
+      <Pressable style={styles.sortBtn} onPress={() => setSortOpen(true)} accessibilityRole="button" accessibilityLabel="Sort products">
+        <Icon name="tune" size={18} color={colors.text.primary} />
+        <AppText variant="label" weight="600" style={{ marginLeft: 6 }}>Sort</AppText>
+      </Pressable>
     </View>
   );
 
-  if (loading && page === 1) {
-    return (
-      <View style={styles.loaderContainer}>
-        <Loader />
-      </View>
-    );
-  }
-
   return (
-    <View style={[styles.maincontainer, { backgroundColor: colors.headerbg }]}>
-      <View style={[styles.container, { backgroundColor: colors.bodybackground }]}>
-        <DropDownPicker
-          open={open}
-          value={sortOrder}
-          items={items}
-          setOpen={setOpen}
-          setValue={setSortOrder}
-          setItems={setItems}
-          style={[styles.dropdown, { backgroundColor: colors.cardsbackground }]}
-          containerStyle={styles.dropdownContainer}
-          dropDownContainerStyle={[styles.dropdownMenu, { backgroundColor: colors.cardsbackground }]}
-        />
-
+    <View style={styles.container}>
+      {loading && page === 1 ? (
+        <View style={styles.skeletonWrap}>
+          {renderHeader()}
+          <View style={styles.skeletonGrid}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} width={CARD_WIDTH} />
+            ))}
+          </View>
+        </View>
+      ) : (
         <FlatList
           data={products}
           numColumns={2}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+          keyExtractor={(item) => String(item.id)}
+          ListHeaderComponent={renderHeader}
+          columnWrapperStyle={{ gap: GAP, paddingHorizontal: GAP }}
+          ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <EmptyState icon="inventory-2" title="No products found" subtitle="Please check back later." />
+          }
+          renderItem={({ item }) => (
+            <ProductCard
+              product={item}
+              width={CARD_WIDTH}
+              onPress={setSelectedProduct}
+              onAddToCart={handleAddToCart}
+              wishlisted={isWishlisted(item.id)}
+              onToggleWishlist={toggleWishlist}
+            />
+          )}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.brand.primary} />}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
             loadingMore ? (
-              <View style={{ paddingVertical: 20 }}>
-                <ActivityIndicator size="small" color={colors.primary} />
+              <View style={{ paddingVertical: space.xl }}>
+                <ActivityIndicator size="small" color={colors.brand.primary} />
               </View>
             ) : null
           }
-          contentContainerStyle={styles.listContainer}
         />
+      )}
 
-        {selectedProduct && (
-          <ProductModal userId={userId} product={selectedProduct} onClose={() => setSelectedProduct(null)} />
-        )}
-      </View>
+      {selectedProduct && (
+        <ProductModal userId={userId} product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      )}
+
+      <Sheet visible={sortOpen} onClose={() => setSortOpen(false)} title="Sort by">
+        {SORTS.map((s) => {
+          const active = s.value === sortOrder;
+          return (
+            <Pressable key={s.value} style={styles.sortRow} onPress={() => pickSort(s.value)} accessibilityRole="button">
+              <AppText variant="bodyLg" color={active ? "brand" : "primary"} weight={active ? "700" : "400"}>
+                {s.label}
+              </AppText>
+              {active ? <Icon name="check-circle" size={20} color={colors.brand.primary} /> : null}
+            </Pressable>
+          );
+        })}
+      </Sheet>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  maincontainer: { flex: 1, width: "100%", height: "100%", paddingTop: 30 },
-  container: { flex: 1, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
-  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  dropdownContainer: { marginHorizontal: 20, marginTop: 30, marginBottom: 10, zIndex: 1000, width: "90%" },
-  dropdown: { borderRadius: 10 },
-  dropdownMenu: { borderRadius: 10 },
-  listContainer: { paddingHorizontal: 15, marginTop: 10, paddingBottom: 95 },
-  productCard: { flex: 1, margin: 10, padding: 10, borderRadius: 10, alignItems: "center", elevation: 5 },
-  productImage: { width: 100, height: 100, borderRadius: 5 },
-  productName: { fontSize: 14, fontWeight: "bold", marginTop: 5, textAlign: "center" },
-  productStock: { fontSize: 12 },
-  productPrice: { fontSize: 16, fontWeight: "bold" },
-  shopNowButton: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 15, borderRadius: 5, alignItems: "center" },
-  shopNowText: { fontSize: 14, fontWeight: "bold" },
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  list: { paddingBottom: 120 },
+  skeletonWrap: { flex: 1 },
+  skeletonGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: GAP, gap: GAP },
+  toolbar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: GAP,
+    paddingVertical: space.md,
+  },
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.bg.surface,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    ...shadows.e1,
+  },
+  sortRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: space.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
 });
 
 export default ProductsScreen;
