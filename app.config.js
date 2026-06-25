@@ -8,8 +8,8 @@ try {
 export default () => ({
   expo: {
     name: "basitsanitary",
-    slug: "basit-sanitary-app",
-    owner: "basitkhokhar4949",
+    slug: "basit-sanitary",
+    owner: "basit5000",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon2.png",
