@@ -3,9 +3,10 @@
 // Completesets duplication. Pass data + handlers.
 //
 // variant:
-//   "standard" (default) — compact image-first cards (Trending / On Sale).
+//   "standard" (default) — compact image-first cards (Trending).
 //   "showcase"           — wider full-bleed cards for curated collections
 //                          (Complete Sets).
+//   "deal"               — gold-accented premium offer cards (On Sale).
 
 import React, { useMemo } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
@@ -17,7 +18,7 @@ import { ProductCardSkeleton } from "../ui/Skeleton";
 import { colors } from "../../theme/colors";
 import { space } from "../../theme/spacing";
 
-const CARD_WIDTH = { standard: 164, showcase: 240 };
+const CARD_WIDTH = { standard: 164, showcase: 240, deal: 180 };
 
 const ProductCarousel = ({
   title,

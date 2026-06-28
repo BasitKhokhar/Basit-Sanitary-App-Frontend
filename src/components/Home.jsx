@@ -63,7 +63,7 @@ const HomeScreen = () => {
           }
         })
       );
-
+      console.log("Fetched home data:", responses.onSaleProducts);
       setHomeData(responses.reduce((acc, { key, data }) => ((acc[key] = data), acc), {}));
     } catch (error) {
       if (__DEV__) console.error("Home data fetch error:", error);
@@ -149,7 +149,7 @@ const HomeScreen = () => {
       key: "onSale",
       render: () =>
         homeData.onSaleProducts?.length ? (
-          <ProductCarousel title="On Sale" subtitle="Limited-time premium offers" data={homeData.onSaleProducts} {...carouselProps} />
+          <ProductCarousel title="On Sale" subtitle="Limited-time premium offers" variant="deal" data={homeData.onSaleProducts} {...carouselProps} />
         ) : null,
     },
     { key: "brands", render: () => <BrandSlider brands={homeData.brandData} /> },

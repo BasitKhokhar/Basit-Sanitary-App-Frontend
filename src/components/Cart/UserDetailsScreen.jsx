@@ -1,36 +1,50 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Image,
-  ActivityIndicator,
-  ScrollView,
   Modal,
   Pressable,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import Icon from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation, useRoute } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import * as ImagePicker from 'expo-image-picker';
-import { useNavigation, useRoute } from '@react-navigation/native';
 import { useNotification } from '../../ContextApis/NotificationsContext';
-import { colors } from '../Themes/colors';
 import { apiFetch } from '../../apiFetch';
-import Constants from 'expo-constants';
-import Icon from "@expo/vector-icons/MaterialIcons";
 
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+import AppText from "../../components/ui/Text";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import InputField from "../../components/ui/InputField";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const UserDetailsScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { createNotification, fetchNotifications } = useNotification();
   const route = useRoute();
-  const { user_id, subtotal, shipping_charges, total_amount, cart_items } = route.params || {};
+  const {
+    user_id,
+    subtotal,
+    shipping_charges,
+    total_amount,
+    advance_payment,
+    cart_items,
+  } = route.params || {};
 
-  const [form, setForm] = useState({ name: '', phone: '', city: '', address: '', receipt_url: null });
+  const advance = advance_payment ?? Math.round((total_amount || 0) * 0.2);
+
+  const [form, setForm] = useState({ name: '', phone: '', city: '', address: '' });
   const [selectedImage, setSelectedImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,7 +52,9 @@ const UserDetailsScreen = () => {
   // Modal States
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
-  const [modalType, setModalType] = useState("success"); // success | error | info
+  const [modalType, setModalType] = useState("info"); // success | error | info
+
+  const setField = (key) => (text) => setForm((prev) => ({ ...prev, [key]: text }));
 
   const showModal = (message, type = "info") => {
     setModalMessage(message);
@@ -49,7 +65,7 @@ const UserDetailsScreen = () => {
   const handleImagePick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      showModal("Permission Denied. Please allow gallery access.", "error");
+      showModal("Permission denied. Please allow gallery access.", "error");
       return;
     }
 
@@ -60,8 +76,7 @@ const UserDetailsScreen = () => {
       });
 
       if (!result.canceled) {
-        const uri = result.assets?.[0]?.uri;
-        setSelectedImage(uri);
+        setSelectedImage(result.assets?.[0]?.uri);
       }
     } catch (error) {
       showModal("Image selection failed.", "error");
@@ -70,7 +85,7 @@ const UserDetailsScreen = () => {
 
   const uploadImageAndSubmit = async () => {
     if (!form.name || !form.phone || !form.city || !form.address || !selectedImage) {
-      showModal("Please fill all fields and upload receipt.", "error");
+      showModal("Please fill all fields and upload your receipt.", "error");
       return;
     }
 
@@ -90,7 +105,15 @@ const UserDetailsScreen = () => {
     }
 
     try {
-      const requestData = { ...form, receipt_url: receiptUrl, user_id, subtotal, shipping_charges, total_amount, cart_items };
+      const requestData = {
+        ...form,
+        receipt_url: receiptUrl,
+        user_id,
+        subtotal,
+        shipping_charges,
+        total_amount,
+        cart_items,
+      };
       setLoading(true);
 
       const responseApi = await apiFetch(`/cart/orders`, {
@@ -104,16 +127,15 @@ const UserDetailsScreen = () => {
 
       await createNotification(
         "Order Placed Successfully",
-        `Your order of Rs ${total_amount} has been submitted. We will confirm shortly.`,
+        `Your order of Rs ${Number(total_amount).toLocaleString()} has been submitted. We will confirm shortly.`,
         "order"
       );
 
       fetchNotifications();
 
-      showModal("Your Order is in Progress. You will soon get confirmation!", "success");
+      showModal("Your order is in progress. You will get a confirmation soon!", "success");
 
       navigation.navigate("Checkout");
-
     } catch (error) {
       showModal(`Submission failed: ${error.message}`, "error");
     } finally {
@@ -122,119 +144,208 @@ const UserDetailsScreen = () => {
     }
   };
 
-  return (
-    <>
-      <ScrollView
-        style={[styles.container, { backgroundColor: colors.bodybackground }]}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      >
-        <View
-          style={[styles.formCard, { backgroundColor: colors.cardsbackground, borderColor: colors.border }]}
-        >
-          <TextInput
-            style={[styles.input, { borderColor: colors.secondary, color: colors.text }]}
-            placeholder="Full Name"
-            placeholderTextColor={colors.mutedText}
-            value={form.name}
-            onChangeText={(text) => setForm({ ...form, name: text })}
-          />
+  const SummaryRow = ({ label, value, strong, accent }) => (
+    <View style={styles.summaryRow}>
+      <AppText variant={strong ? "h3" : "body"} color={strong ? "primary" : "secondary"}>{label}</AppText>
+      <AppText variant={strong ? "h3" : "bodyLg"} weight={strong ? "800" : "700"} color={accent ? "brand" : "primary"}>
+        Rs {Number(value || 0).toLocaleString()}
+      </AppText>
+    </View>
+  );
 
-          <TextInput
-            style={[styles.input, { borderColor: colors.secondary, color: colors.text }]}
-            placeholder="Phone Number"
-            placeholderTextColor={colors.mutedText}
+  return (
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.scroll, { paddingBottom: space.xl + insets.bottom + 96 }]}
+        >
+          <AppText variant="h2" style={{ marginBottom: space.xs }}>Confirm your order</AppText>
+          <AppText variant="body" color="secondary" style={{ marginBottom: space.xl }}>
+            Add your delivery details and upload your advance payment receipt.
+          </AppText>
+
+          {/* Order summary */}
+          <Card style={{ marginBottom: space.xl }}>
+            <SummaryRow label="Subtotal" value={subtotal} />
+            <SummaryRow label="Shipping" value={shipping_charges} />
+            <View style={styles.divider} />
+            <SummaryRow label="Total" value={total_amount} strong accent />
+            <View style={styles.advanceBox}>
+              <Icon name="info-outline" size={18} color={colors.status.warning} />
+              <AppText variant="caption" color="secondary" style={{ flex: 1, marginLeft: space.sm }}>
+                Advance to pay now (20%):{" "}
+                <AppText variant="caption" weight="800" color="primary">Rs {Number(advance).toLocaleString()}</AppText>.
+                Remaining 80% on delivery.
+              </AppText>
+            </View>
+          </Card>
+
+          {/* Delivery details */}
+          <AppText variant="label" color="secondary" style={{ marginBottom: space.md }}>
+            Delivery details
+          </AppText>
+          <InputField
+            label="Full name"
+            icon="person-outline"
+            placeholder="e.g. Ahmed Raza"
+            value={form.name}
+            onChangeText={setField("name")}
+          />
+          <InputField
+            label="Phone number"
+            icon="phone"
+            placeholder="03XX XXXXXXX"
             keyboardType="phone-pad"
             value={form.phone}
-            onChangeText={(text) => setForm({ ...form, phone: text })}
+            onChangeText={setField("phone")}
           />
-
-          <TextInput
-            style={[styles.input, { borderColor: colors.secondary, color: colors.text }]}
-            placeholder="City"
-            placeholderTextColor={colors.mutedText}
+          <InputField
+            label="City"
+            icon="location-city"
+            placeholder="e.g. Lahore"
             value={form.city}
-            onChangeText={(text) => setForm({ ...form, city: text })}
+            onChangeText={setField("city")}
           />
-
-          <TextInput
-            style={[styles.input, { borderColor: colors.secondary, color: colors.text, height: 100, textAlignVertical: "top" }]}
-            placeholder="Address"
-            placeholderTextColor={colors.mutedText}
+          <InputField
+            label="Delivery address"
+            icon="home"
+            placeholder="House #, street, area"
             multiline
             value={form.address}
-            onChangeText={(text) => setForm({ ...form, address: text })}
+            onChangeText={setField("address")}
           />
 
-          <Text style={[styles.text1, { color: colors.text }]}>
-            Upload the receipt of 20% advance that you have paid from your JazzCash or EasyPaisa App.
-          </Text>
+          {/* Receipt upload */}
+          <AppText variant="label" color="secondary" style={{ marginTop: space.sm, marginBottom: space.sm }}>
+            Payment receipt
+          </AppText>
+          <AppText variant="caption" color="muted" style={{ marginBottom: space.md, lineHeight: 18 }}>
+            Upload the receipt of the 20% advance paid via JazzCash or EasyPaisa.
+          </AppText>
 
-          <TouchableOpacity
-            style={[styles.uploadButton, { backgroundColor: colors.cardsbackground, borderWidth: 1.5, borderColor: colors.primary }]}
-            onPress={handleImagePick}
-          >
-            <Text style={[styles.uploadText, { color: colors.primary }]}>Select Receipt</Text>
-          </TouchableOpacity>
+          {selectedImage ? (
+            <View style={styles.receiptPreviewWrap}>
+              <Image source={{ uri: selectedImage }} style={styles.receiptPreview} />
+              <Pressable style={styles.receiptChange} onPress={handleImagePick} hitSlop={8}>
+                <Icon name="edit" size={16} color={colors.text.onPrimary} />
+                <AppText variant="caption" color="onPrimary" weight="700" style={{ marginLeft: space.xs }}>
+                  Change
+                </AppText>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.uploadBox} onPress={handleImagePick}>
+              <Icon name="cloud-upload" size={28} color={colors.brand.primary} />
+              <AppText variant="label" weight="700" color="brand" style={{ marginTop: space.sm }}>
+                Select receipt
+              </AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                JPG or PNG
+              </AppText>
+            </Pressable>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          {selectedImage && <Image source={{ uri: selectedImage }} style={styles.imagePreview} />}
-          {uploading && <ActivityIndicator size="large" color={colors.primary} />}
-
-          <TouchableOpacity
-            style={[styles.submitButton, { backgroundColor: colors.primary }]}
-            onPress={uploadImageAndSubmit}
-            disabled={loading || uploading}
-          >
-            <Text style={[styles.submitText, { color: colors.text }]}>
-              {loading ? "Submitting..." : "Confirm Order"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      {/* Sticky confirm button */}
+      <View style={[styles.footer, { paddingBottom: space.lg + insets.bottom }]}>
+        <Button
+          title={loading || uploading ? "Submitting…" : "Confirm Order"}
+          icon="check-circle"
+          loading={loading || uploading}
+          disabled={loading || uploading}
+          onPress={uploadImageAndSubmit}
+        />
+      </View>
 
       <Modal animationType="fade" transparent visible={modalVisible}>
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalBox, { backgroundColor: colors.cardsbackground }]}>
-            <Pressable onPress={() => setModalVisible(false)} style={styles.closeIconWrapper}>
-              <Icon name="close" size={22} color={colors.primary} />
+          <Card style={styles.modalBox}>
+            <Pressable onPress={() => setModalVisible(false)} style={styles.closeIcon} hitSlop={8}>
+              <Icon name="close" size={20} color={colors.text.muted} />
             </Pressable>
 
-            <Text style={[styles.modalTitle, { color: modalType === "error" ? "red" : colors.primary }]}>
-              {modalType === "error" ? "Error" : "Message"}
-            </Text>
-
-            <Text style={[styles.modalMessage, { color: colors.text }]}>{modalMessage}</Text>
-
-            <TouchableOpacity
-              style={[styles.okBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setModalVisible(false)}
+            <View
+              style={[
+                styles.modalIcon,
+                { backgroundColor: modalType === "error" ? colors.status.error : colors.brand.primary },
+              ]}
             >
-              <Text style={[styles.okText, { color: colors.text }]}>OK</Text>
-            </TouchableOpacity>
-          </View>
+              <Icon
+                name={modalType === "error" ? "error-outline" : modalType === "success" ? "check" : "info"}
+                size={26}
+                color={colors.text.onPrimary}
+              />
+            </View>
+
+            <AppText variant="h3" align="center" style={{ marginTop: space.md }}>
+              {modalType === "error" ? "Something went wrong" : modalType === "success" ? "Success" : "Notice"}
+            </AppText>
+            <AppText variant="body" color="secondary" align="center" style={{ marginTop: space.sm }}>
+              {modalMessage}
+            </AppText>
+
+            <Button
+              title="Got it"
+              size="sm"
+              style={{ marginTop: space.lg }}
+              onPress={() => setModalVisible(false)}
+            />
+          </Card>
         </View>
       </Modal>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  formCard: { borderRadius: 12, padding: 16, elevation: 3, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
-  input: { borderWidth: 1, padding: 12, borderRadius: 8, marginBottom: 12 },
-  text1: { paddingVertical: 8, fontSize: 14 },
-  uploadButton: { padding: 12, borderRadius: 8, alignItems: "center", marginBottom: 10 },
-  uploadText: { fontWeight: "bold", fontSize: 16 },
-  imagePreview: { width: "100%", height: 200, borderRadius: 8, marginVertical: 10 },
-  submitButton: { padding: 12, borderRadius: 8, alignItems: "center", marginTop: 10 },
-  submitText: { fontSize: 16, fontWeight: "bold" },
-
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  modalBox: { width: "85%", padding: 20, borderRadius: 12, position: "relative" },
-  closeIconWrapper: { position: "absolute", top: 10, right: 10, backgroundColor: colors.bodybackground, width: 32, height: 32, borderRadius: 20, justifyContent: "center", alignItems: "center" },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10, textAlign: "center" },
-  modalMessage: { fontSize: 15, textAlign: "center", marginVertical: 10, paddingHorizontal: 5 },
-  okBtn: { marginTop: 15, padding: 10, borderRadius: 8, alignSelf: "center", width: "40%", alignItems: "center" },
-  okText: { fontSize: 16, fontWeight: "bold" },
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  scroll: { padding: space.lg },
+  divider: { height: 1, backgroundColor: colors.border.subtle, marginVertical: space.sm },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: space.sm },
+  advanceBox: {
+    flexDirection: "row", alignItems: "flex-start",
+    backgroundColor: colors.accent.soft, padding: space.md,
+    borderRadius: radius.md, marginTop: space.md,
+  },
+  uploadBox: {
+    alignItems: "center", justifyContent: "center",
+    paddingVertical: space["2xl"],
+    borderRadius: radius.lg, borderWidth: 1.5,
+    borderStyle: "dashed", borderColor: colors.brand.primary,
+    backgroundColor: colors.brand.tint,
+  },
+  receiptPreviewWrap: { borderRadius: radius.lg, overflow: "hidden", ...shadows.e2 },
+  receiptPreview: { width: "100%", height: 220, backgroundColor: colors.bg.sunken },
+  receiptChange: {
+    position: "absolute", bottom: space.md, right: space.md,
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: colors.brand.primaryDark,
+    paddingHorizontal: space.md, paddingVertical: space.sm,
+    borderRadius: radius.pill, ...shadows.e2,
+  },
+  footer: {
+    position: "absolute", left: 0, right: 0, bottom: 0,
+    backgroundColor: colors.bg.surface,
+    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+    paddingHorizontal: space.xl, paddingTop: space.lg,
+    ...shadows.e4,
+  },
+  modalBackdrop: {
+    flex: 1, backgroundColor: "rgba(12,26,20,0.55)",
+    justifyContent: "center", alignItems: "center", padding: space.xl,
+  },
+  modalBox: { width: "100%", maxWidth: 360, alignItems: "center", paddingVertical: space.xl },
+  closeIcon: { position: "absolute", top: space.md, right: space.md },
+  modalIcon: {
+    width: 56, height: 56, borderRadius: radius.pill,
+    justifyContent: "center", alignItems: "center",
+  },
 });
 
 export default UserDetailsScreen;

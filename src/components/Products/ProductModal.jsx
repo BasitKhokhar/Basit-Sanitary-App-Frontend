@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CartContext } from "../../ContextApis/cartContext";
 import { useWishlist } from "../../ContextApis/WishlistContext";
 import { apiFetch } from "../../apiFetch";
@@ -32,6 +33,7 @@ const colorOptions = ["White", "Half White", "Chrome", "Light Pink", "Light Grey
 const ProductModal = ({ product, onClose, userId }) => {
   const { fetchCartCount, bumpCartCount } = useContext(CartContext);
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const insets = useSafeAreaInsets();
 
   const [selectedColor, setSelectedColor] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -43,7 +45,18 @@ const ProductModal = ({ product, onClose, userId }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const wishlisted = isWishlisted(product.id);
-  const originalPrice = product.original_price ?? product.old_price;
+
+  // Sale pricing: the on-sale feed sends the discounted amount as `new_price`
+  // and keeps the original in `price`; other feeds use original_price/old_price.
+  const hasNewPrice = product.new_price != null && Number(product.new_price) > 0;
+  const salePrice = hasNewPrice ? Number(product.new_price) : Number(product.price || 0);
+  const wasPrice = hasNewPrice
+    ? Number(product.price)
+    : product.original_price ?? product.old_price ?? null;
+  const discountPct =
+    wasPrice && Number(wasPrice) > salePrice
+      ? Math.round((1 - salePrice / Number(wasPrice)) * 100)
+      : null;
   const outOfStock = product.stock != null && Number(product.stock) <= 0;
 
   const loadReviews = useCallback(async () => {
@@ -155,11 +168,18 @@ const ProductModal = ({ product, onClose, userId }) => {
             <View style={styles.heartFloat}>
               <HeartButton active={wishlisted} onToggle={() => toggleWishlist(product)} />
             </View>
-            {(product.on_sale || originalPrice) && (
+            {discountPct ? (
+              <View style={styles.discountFloat}>
+                <Icon name="local-offer" size={14} color={colors.text.onPrimary} />
+                <AppText variant="label" weight="800" color="onPrimary" style={{ marginLeft: 6 }}>
+                  {discountPct}% OFF
+                </AppText>
+              </View>
+            ) : product.on_sale || wasPrice ? (
               <View style={styles.saleFloat}>
                 <Badge label="SALE" tone="error" />
               </View>
-            )}
+            ) : null}
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
@@ -175,11 +195,19 @@ const ProductModal = ({ product, onClose, userId }) => {
             </View>
 
             <PriceTag
-              price={Math.floor(product.price || 0)}
-              originalPrice={originalPrice ? Math.floor(originalPrice) : undefined}
+              price={Math.floor(salePrice)}
+              originalPrice={wasPrice ? Math.floor(Number(wasPrice)) : undefined}
               size="h1"
               style={{ marginTop: space.md }}
             />
+            {discountPct ? (
+              <View style={styles.saveRow}>
+                <Icon name="savings" size={16} color={colors.accent.base} />
+                <AppText variant="label" weight="700" style={{ color: colors.accent.base, marginLeft: 6 }}>
+                  You save {`Rs ${Math.floor(Number(wasPrice) - salePrice).toLocaleString()}`} ({discountPct}%)
+                </AppText>
+              </View>
+            ) : null}
 
             {product.description ? (
               <AppText variant="body" color="secondary" style={{ marginTop: space.md, lineHeight: 22 }}>
@@ -254,7 +282,7 @@ const ProductModal = ({ product, onClose, userId }) => {
           </ScrollView>
 
           {/* Sticky add to cart */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: space.lg + insets.bottom }]}>
             <Button
               title={outOfStock ? "Out of stock" : "Add to Cart"}
               icon="add-shopping-cart"
@@ -297,6 +325,14 @@ const styles = StyleSheet.create({
   },
   heartFloat: { position: "absolute", top: space.lg, right: space.lg },
   saleFloat: { position: "absolute", bottom: space.lg, left: space.lg },
+  discountFloat: {
+    position: "absolute", bottom: space.lg, left: space.lg,
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: colors.accent.base,
+    paddingHorizontal: space.md, paddingVertical: space.sm,
+    borderRadius: radius.pill, ...shadows.e2,
+  },
+  saveRow: { flexDirection: "row", alignItems: "center", marginTop: space.sm },
   body: { padding: space.xl, paddingBottom: space["3xl"] },
   metaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: space.sm },
   colorRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },

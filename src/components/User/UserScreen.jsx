@@ -94,9 +94,9 @@ const UserScreen = () => {
     { label: "Cart", icon: "shopping-bag", value: cartCount, onPress: () => navigation.navigate("Main") },
   ];
 
+  // Orders / Wishlist / Cart are already surfaced as quick-stat cards above,
+  // so they're intentionally omitted from this list to avoid duplication.
   const menu = [
-    { label: "My Orders", icon: "receipt-long", onPress: () => navigation.navigate("Orders") },
-    { label: "My Wishlist", icon: "favorite-border", onPress: () => navigation.navigate("Wishlist") },
     { label: "Account Detail", icon: "person-outline", onPress: () => navigation.navigate("AccountDetail", { userData }) },
     { label: "Customer Support", icon: "support-agent", onPress: () => navigation.navigate("CustomerSupport") },
     { label: "FAQs", icon: "help-outline", onPress: () => navigation.navigate("faq") },

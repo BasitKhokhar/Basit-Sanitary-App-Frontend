@@ -80,10 +80,10 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     paddingHorizontal: space.lg,
-    paddingTop: space.lg,
+    paddingTop: space.sm,
     paddingBottom: space["2xl"],
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
+    // borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: 60,
   },
   header: { flexDirection: "row", alignItems: "center" },
   eyebrow: {

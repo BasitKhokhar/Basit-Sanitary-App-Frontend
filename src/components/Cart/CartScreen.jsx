@@ -3,6 +3,7 @@ import { View, FlatList, Image, Alert, StyleSheet, Pressable } from "react-nativ
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CartContext } from "../../ContextApis/cartContext";
 import { apiFetch } from "../../apiFetch";
 import { endpoints } from "../../services/endpoints";
@@ -50,7 +51,9 @@ const CartScreen = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [summaryHeight, setSummaryHeight] = useState(0);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const fetchCartItems = async () => {
     setIsLoading(true);
@@ -150,7 +153,7 @@ const CartScreen = () => {
         onRefresh={handleRefresh}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => String(item.cart_id)}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: summaryHeight + space.xl }]}
         ListHeaderComponent={
           <AppText variant="h2" style={{ marginBottom: space.lg }}>
             Your Cart ({cartItems.length})
@@ -162,8 +165,11 @@ const CartScreen = () => {
         )}
       />
 
-      {/* Summary */}
-      <View style={styles.summary}>
+      {/* Summary — bottom padding clears the floating tab bar (~64pt bar + knob) plus the safe-area inset. */}
+      <View
+        style={[styles.summary, { paddingBottom: space.xl + insets.bottom + 90 }]}
+        onLayout={(e) => setSummaryHeight(e.nativeEvent.layout.height)}
+      >
         <View style={styles.summaryRow}>
           <AppText variant="body" color="secondary">Subtotal</AppText>
           <AppText variant="bodyLg" weight="700">Rs {subtotal.toLocaleString()}</AppText>
@@ -190,7 +196,7 @@ const CartScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.canvas },
-  list: { padding: space.lg, paddingBottom: 280 },
+  list: { padding: space.lg },
   row: { flexDirection: "row", alignItems: "center", padding: space.md },
   image: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.bg.sunken },
   rowInfo: { flex: 1, marginLeft: space.md },
@@ -204,7 +210,7 @@ const styles = StyleSheet.create({
     position: "absolute", left: 0, right: 0, bottom: 0,
     backgroundColor: colors.bg.surface,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    padding: space.xl, paddingBottom: 150,
+    padding: space.xl,
     ...shadows.e4,
   },
   summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: space.sm },

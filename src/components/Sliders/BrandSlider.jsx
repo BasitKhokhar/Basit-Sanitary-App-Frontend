@@ -1,16 +1,22 @@
+// BrandSlider — premium "Our Brands" showcase.
+// Deep emerald gradient backdrop with clean white logo cards on a grid,
+// matching the app's emerald design language.
+
 import React from "react";
-import {
-  View,
-  Text,
-  Image,
-  FlatList,
-  Dimensions,
-  StyleSheet,
-} from "react-native";
+import { View, Image, FlatList, Dimensions, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Icon from "@expo/vector-icons/MaterialIcons";
+import AppText from "../ui/Text";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const { width } = Dimensions.get("window");
-const itemWidth = width / 3 - 20;
+const COLS = 3;
+const GAP = space.md;
+const H_PAD = space.lg;
+const CARD_W = (width - H_PAD * 2 - GAP * (COLS - 1)) / COLS;
 
 const BrandSlider = ({ brands }) => {
   const filteredBrands = Array.isArray(brands)
@@ -19,68 +25,96 @@ const BrandSlider = ({ brands }) => {
 
   return (
     <LinearGradient
-      colors={["#001F3F", "#003366", "#004C99"]}
-      start={{ x: -0.2, y: 0 }}
+      colors={colors.gradients.emeraldDeep}
+      start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
+      style={styles.gradient}
     >
-      <View style={styles.container}>
-        <Text style={styles.title}>Our Brands</Text>
-        <FlatList
-          data={filteredBrands}
-          keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
-          numColumns={3}
-          columnWrapperStyle={styles.columnWrapper}
-          contentContainerStyle={styles.flatListContainer}
-          renderItem={({ item }) => (
-            <View style={styles.brandItem}>
-              <Image
-                source={{ uri: item.image_url }}
-                style={styles.brandImage}
-                resizeMode="cover"
-                onError={() => console.warn("Failed to load brand image:", item.image_url)}
-              />
-            </View>
-          )}
-          ListEmptyComponent={
-            <Text style={{ color: "#fff", textAlign: "center" }}>
-              No brands available
-            </Text>
-          }
-        />
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <Icon name="verified" size={20} color={colors.accent.base} />
+          <AppText variant="h3" color="onPrimary" weight="700" style={styles.title}>
+            Our Brands
+          </AppText>
+        </View>
+        <AppText variant="caption" style={styles.subtitle}>
+          Trusted names we proudly carry
+        </AppText>
       </View>
+
+      <FlatList
+        data={filteredBrands}
+        keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
+        numColumns={COLS}
+        scrollEnabled={false}
+        columnWrapperStyle={styles.columnWrapper}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.brandImage}
+              resizeMode="contain"
+              onError={() => console.warn("Failed to load brand image:", item.image_url)}
+            />
+          </View>
+        )}
+        ListEmptyComponent={
+          <AppText variant="body" style={styles.empty}>
+            No brands available
+          </AppText>
+        }
+      />
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  gradient: {
+    paddingVertical: space["2xl"],
+    paddingHorizontal: H_PAD,
+    borderRadius: radius.xl,
+    marginHorizontal: space.lg,
+    marginBottom: space["2xl"],
+    ...shadows.e3,
+  },
+  header: {
+    marginBottom: space.lg,
+  },
+  titleRow: {
+    flexDirection: "row",
     alignItems: "center",
-    padding: 20,
   },
   title: {
-    fontWeight: "bold",
-    color: "white",
-    fontSize: 20,
-    paddingBottom: 10,
+    marginLeft: space.xs,
   },
+  subtitle: {
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 2,
+  },
+  listContent: {},
   columnWrapper: {
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: GAP,
   },
-  flatListContainer: {
-    paddingHorizontal: 10,
-  },
-  brandItem: {
-    width: itemWidth,
+  card: {
+    width: CARD_W,
+    height: CARD_W * 0.66,
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.lg,
     alignItems: "center",
+    justifyContent: "center",
+    padding: space.sm,
+    ...shadows.e2,
   },
   brandImage: {
-    width: itemWidth,
-    height: 70,
-    borderRadius: 5,
-    borderWidth: 1,
-    backgroundColor: "black",
+    width: "100%",
+    height: "100%",
+  },
+  empty: {
+    color: "rgba(255,255,255,0.85)",
+    textAlign: "center",
+    width: "100%",
   },
 });
 

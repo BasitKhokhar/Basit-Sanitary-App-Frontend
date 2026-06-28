@@ -1,138 +1,136 @@
+// Categories — premium horizontal rail of circular category tiles.
+// Round image avatars with an emerald ring + soft shadow, name below.
+// Gives a cleaner, more premium "shop by category" feel.
 
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { colors } from '../Themes/colors';   // ✅ THEME IMPORT
+import React, { useState, useCallback } from "react";
+import { View, FlatList, Image, StyleSheet } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Icon from "@expo/vector-icons/MaterialIcons";
+import { useNavigation } from "@react-navigation/native";
+import PressableScale from "../ui/PressableScale";
+import AppText from "../ui/Text";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { shadows } from "../../theme/shadows";
 
-const screenWidth = Dimensions.get('window').width;
-const cardSpacing = 10;
-const cardWidth = screenWidth * 0.28;
+const CIRCLE = 84;
+const RING = 3;
 
-const Categories = ({ categoriesData }) => {
-  const [errorImageIds, setErrorImageIds] = useState({});
-  const navigation = useNavigation();
+const CategoryTile = ({ item, onPress }) => {
+  const [failed, setFailed] = useState(false);
 
-  const renderItem = ({ item }) => {
-    const imageFailed = errorImageIds[item.id];
-
-    return (
-      <TouchableOpacity
-        style={{ width: cardWidth, marginRight: cardSpacing }}
-        onPress={() =>
-          navigation.navigate('Subcategories', { categoryId: item.id })
-        }
+  return (
+    <PressableScale style={styles.tile} onPress={onPress} accessibilityLabel={item.name}>
+      {/* Emerald gradient ring around the avatar */}
+      <LinearGradient
+        colors={colors.gradients.emeraldGlow}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.ring}
       >
-        <View
-          style={{
-            backgroundColor: colors.cardsbackground,    // ✅ updated
-            padding: 10,
-            borderRadius: 10,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 5,
-          }}
-        >
-          {!imageFailed ? (
+        <View style={styles.avatarWrap}>
+          {!failed && item.image_url ? (
             <Image
               source={{ uri: item.image_url }}
-              style={{
-                width: '100%',
-                height: 90,
-                borderRadius: 5,
-                backgroundColor: colors.bodybackground, // cleaner
-              }}
+              style={styles.image}
               resizeMode="cover"
-              onError={() =>
-                setErrorImageIds((prev) => ({ ...prev, [item.id]: true }))
-              }
+              onError={() => setFailed(true)}
             />
           ) : (
-            <View
-              style={{
-                width: '100%',
-                height: 90,
-                borderRadius: 5,
-                backgroundColor: colors.secondary,      // ❗ replaced #ccc
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: colors.mutedText,              // ❗ replaced #444
-                }}
-              >
-                Image unavailable
-              </Text>
+            <View style={[styles.image, styles.fallback]}>
+              <Icon name="category" size={28} color={colors.brand.primary} />
             </View>
           )}
         </View>
+      </LinearGradient>
 
-        <Text
-          style={{
-            fontSize: 14,
-            textAlign: 'center',
-            fontWeight: '500',
-            marginTop: 5,
-            color: colors.text,                        // ❗ theme text
-          }}
-        >
-          {item.name}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+      <AppText
+        variant="label"
+        weight="600"
+        numberOfLines={2}
+        style={styles.label}
+      >
+        {item.name}
+      </AppText>
+    </PressableScale>
+  );
+};
+
+const Categories = ({ categoriesData }) => {
+  const navigation = useNavigation();
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <CategoryTile
+        item={item}
+        onPress={() => navigation.navigate("Subcategories", { categoryId: item.id })}
+      />
+    ),
+    [navigation]
+  );
 
   if (!categoriesData || categoriesData.length === 0) {
     return (
-      <View
-        style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}
-      >
-        <Text style={{ color: colors.text }}>No categories found.</Text>
+      <View style={styles.empty}>
+        <AppText variant="body" color="muted">No categories found.</AppText>
       </View>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.bodybackground,         // ❗ body background from theme
-        paddingVertical: 10,
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 20,
-          fontWeight: 'bold',
-          marginBottom: 20,
-          textAlign: 'center',
-          color: colors.text,                           // theme text color
-        }}
-      >
-        Categories
-      </Text>
+    <View style={styles.wrap}>
+      <View style={styles.header}>
+        <AppText variant="h3">Shop by Category</AppText>
+        <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+          Explore our premium collections
+        </AppText>
+      </View>
 
       <FlatList
         data={categoriesData}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => String(item.id)}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20 }}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={{ width: space.lg }} />}
         renderItem={renderItem}
       />
     </View>
   );
 };
 
-export default Categories;
+const styles = StyleSheet.create({
+  wrap: { marginVertical:10 },
+  header: { paddingHorizontal: space.lg, marginBottom: space.md },
+  listContent: { paddingHorizontal: space.lg, paddingVertical: space.sm },
+  tile: {
+    width: CIRCLE + 12,
+    alignItems: "center",
+  },
+  ring: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: CIRCLE / 2,
+    padding: RING,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.e3,
+  },
+  avatarWrap: {
+    width: CIRCLE - RING * 2,
+    height: CIRCLE - RING * 2,
+    borderRadius: (CIRCLE - RING * 2) / 2,
+    overflow: "hidden",
+    backgroundColor: colors.bg.surface,
+  },
+  image: { width: "100%", height: "100%" },
+  fallback: { justifyContent: "center", alignItems: "center", backgroundColor: colors.brand.tint },
+  label: {
+    marginTop: space.sm,
+    textAlign: "center",
+    color: colors.text.primary,
+  },
+  empty: { height: 180, justifyContent: "center", alignItems: "center" },
+});
+
+export default React.memo(Categories);
