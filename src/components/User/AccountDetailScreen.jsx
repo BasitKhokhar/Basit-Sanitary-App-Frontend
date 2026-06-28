@@ -9,7 +9,7 @@ import { storage } from "../firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 import { Ionicons } from "@expo/vector-icons";
 import { MotiView, AnimatePresence } from "moti";
 import { colors } from "../Themes/colors";

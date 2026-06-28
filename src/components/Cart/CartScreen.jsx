@@ -3,20 +3,20 @@ import { View, FlatList, Image, Alert, StyleSheet, Pressable } from "react-nativ
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Icon from "@expo/vector-icons/MaterialIcons";
-import { CartContext } from "../../src/ContextApis/cartContext";
-import { apiFetch } from "../../src/apiFetch";
-import { endpoints } from "../../src/services/endpoints";
+import { CartContext } from "../../ContextApis/cartContext";
+import { apiFetch } from "../../apiFetch";
+import { endpoints } from "../../services/endpoints";
 
-import AppText from "../../src/components/ui/Text";
-import Button from "../../src/components/ui/Button";
-import Card from "../../src/components/ui/Card";
-import QuantityStepper from "../../src/components/ui/QuantityStepper";
-import EmptyState from "../../src/components/ui/EmptyState";
-import { Skeleton } from "../../src/components/ui/Skeleton";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
-import { shadows } from "../../src/theme/shadows";
+import AppText from "../../components/ui/Text";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import QuantityStepper from "../../components/ui/QuantityStepper";
+import EmptyState from "../../components/ui/EmptyState";
+import { Skeleton } from "../../components/ui/Skeleton";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const SHIPPING_FREE_OVER = 5000;
 
@@ -46,7 +46,7 @@ const CartRow = React.memo(({ item, onQty, onRemove }) => (
 ));
 
 const CartScreen = () => {
-  const { fetchCartCount } = useContext(CartContext);
+  const { fetchCartCount, bumpCartCount } = useContext(CartContext);
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,18 +74,30 @@ const CartScreen = () => {
   const handleRefresh = () => { setRefreshing(true); fetchCartItems(); };
 
   const handleRemoveFromCart = async (cartId) => {
+    // Optimistic: drop the row immediately, restore it if the server fails.
+    const prevItems = cartItems;
+    const removed = prevItems.find((i) => i.cart_id === cartId);
+    setCartItems((prev) => prev.filter((i) => i.cart_id !== cartId));
+    bumpCartCount(-(removed?.quantity || 0));
     try {
       const response = await apiFetch(`/cart/${cartId}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Failed to remove item");
-      setCartItems((prev) => prev.filter((i) => i.cart_id !== cartId));
       fetchCartCount();
     } catch (error) {
+      setCartItems(prevItems); // rollback
+      bumpCartCount(removed?.quantity || 0);
       Alert.alert("Error", error.message);
     }
   };
 
   const handleQuantityChange = async (cartId, newQuantity) => {
     if (newQuantity < 1) return;
+    // Optimistic: update the quantity immediately, reconcile/rollback after.
+    const prevItems = cartItems;
+    const current = prevItems.find((i) => i.cart_id === cartId);
+    const delta = newQuantity - (current?.quantity || 0);
+    setCartItems((prev) => prev.map((i) => (i.cart_id === cartId ? { ...i, quantity: newQuantity } : i)));
+    bumpCartCount(delta);
     try {
       const userId = await AsyncStorage.getItem("userId");
       const response = await apiFetch(`/cart/${cartId}`, {
@@ -93,9 +105,10 @@ const CartScreen = () => {
         body: JSON.stringify({ quantity: newQuantity, user_id: userId }),
       });
       if (!response.ok) throw new Error("Failed to update quantity");
-      setCartItems((prev) => prev.map((i) => (i.cart_id === cartId ? { ...i, quantity: newQuantity } : i)));
       fetchCartCount();
     } catch (error) {
+      setCartItems(prevItems); // rollback
+      bumpCartCount(-delta);
       Alert.alert("Error", error.message);
     }
   };
@@ -191,7 +204,7 @@ const styles = StyleSheet.create({
     position: "absolute", left: 0, right: 0, bottom: 0,
     backgroundColor: colors.bg.surface,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    padding: space.xl, paddingBottom: 110,
+    padding: space.xl, paddingBottom: 150,
     ...shadows.e4,
   },
   summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: space.sm },

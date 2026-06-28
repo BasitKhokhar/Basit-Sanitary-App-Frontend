@@ -2,14 +2,14 @@
 
 import React, { useContext } from "react";
 import { View, FlatList, StyleSheet, Dimensions } from "react-native";
-import { useWishlist } from "../../src/ContextApis/WishlistContext";
-import { CartContext } from "../../src/ContextApis/cartContext";
-import { apiFetch } from "../../src/apiFetch";
-import { endpoints } from "../../src/services/endpoints";
-import ProductCard from "../../src/components/commerce/ProductCard";
-import EmptyState from "../../src/components/ui/EmptyState";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
+import { useWishlist } from "../../ContextApis/WishlistContext";
+import { CartContext } from "../../ContextApis/cartContext";
+import { apiFetch } from "../../apiFetch";
+import { endpoints } from "../../services/endpoints";
+import ProductCard from "../../components/commerce/ProductCard";
+import EmptyState from "../../components/ui/EmptyState";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
 
 const { width } = Dimensions.get("window");
 const GAP = space.lg;
@@ -17,18 +17,23 @@ const CARD_WIDTH = (width - GAP * 3) / 2;
 
 const WishlistScreen = ({ navigation }) => {
   const { wishlistItems, isWishlisted, toggleWishlist } = useWishlist();
-  const { fetchCartCount } = useContext(CartContext);
+  const { fetchCartCount, bumpCartCount } = useContext(CartContext);
 
-  const handleAddToCart = async (product) => {
-    try {
-      await apiFetch(endpoints.cart.add, {
-        method: "POST",
-        body: JSON.stringify({ productId: product.id, quantity: 1 }),
+  const handleAddToCart = (product) => {
+    // Optimistic badge bump, then sync with the server.
+    bumpCartCount(1);
+    apiFetch(endpoints.cart.add, {
+      method: "POST",
+      body: JSON.stringify({ ...product, quantity: 1, selectedColor: "None" }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("add failed");
+        fetchCartCount();
+      })
+      .catch((e) => {
+        bumpCartCount(-1);
+        if (__DEV__) console.warn("add to cart failed", e);
       });
-      fetchCartCount();
-    } catch (e) {
-      if (__DEV__) console.warn("add to cart failed", e);
-    }
   };
 
   if (!wishlistItems.length) {

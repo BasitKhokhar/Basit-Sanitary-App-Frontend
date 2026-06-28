@@ -1,10 +1,12 @@
 // WishlistContext — wishlist/favorites state.
-// Persists locally via AsyncStorage so the feature works immediately.
-// If a backend /wishlist endpoint exists it will sync; otherwise local-only.
-// ⚠️ BACKEND TODO: implement GET/POST/DELETE /wishlist to enable cross-device sync.
+// Source of truth is the backend (/wishlist), with an AsyncStorage cache so the
+// feature stays instant and works offline. Toggles are optimistic: the UI
+// updates immediately, then syncs with the server (rolling back on failure).
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiFetch } from "../apiFetch";
+import { endpoints } from "../services/endpoints";
 
 const STORAGE_KEY = "wishlist_items_v1";
 
@@ -16,6 +18,31 @@ export const WishlistProvider = ({ children }) => {
   const [items, setItems] = useState({});
   const [hydrated, setHydrated] = useState(false);
 
+  const persist = useCallback(async (next) => {
+    setItems(next);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch (e) {}
+  }, []);
+
+  // Pull the canonical list from the backend and reconcile the local cache.
+  const syncFromServer = useCallback(async () => {
+    try {
+      const res = await apiFetch(endpoints.wishlist.list);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = data.items || data.wishlist || data || [];
+      if (!Array.isArray(list)) return;
+      const map = {};
+      list.forEach((p) => {
+        if (p && p.id != null) map[String(p.id)] = p;
+      });
+      persist(map);
+    } catch (e) {
+      // Offline / endpoint unavailable — keep the local cache.
+    }
+  }, [persist]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -26,15 +53,9 @@ export const WishlistProvider = ({ children }) => {
       } finally {
         setHydrated(true);
       }
+      syncFromServer();
     })();
-  }, []);
-
-  const persist = useCallback(async (next) => {
-    setItems(next);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {}
-  }, []);
+  }, [syncFromServer]);
 
   const isWishlisted = useCallback((id) => !!items[String(id)], [items]);
 
@@ -42,21 +63,37 @@ export const WishlistProvider = ({ children }) => {
     (product) => {
       const id = String(product?.id);
       if (!id || id === "undefined") return;
+
+      // Optimistic local update.
+      const prev = items;
       const next = { ...items };
-      if (next[id]) delete next[id];
+      const wasWishlisted = !!next[id];
+      if (wasWishlisted) delete next[id];
       else next[id] = product;
       persist(next);
+
+      // Sync with the backend; roll back if it rejects.
+      apiFetch(endpoints.wishlist.toggle, {
+        method: "POST",
+        body: JSON.stringify({ productId: product.id }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("toggle failed");
+        })
+        .catch((e) => {
+          persist(prev); // rollback
+          if (__DEV__) console.warn("wishlist toggle failed", e);
+        });
     },
     [items, persist]
   );
 
   const removeFromWishlist = useCallback(
     (id) => {
-      const next = { ...items };
-      delete next[String(id)];
-      persist(next);
+      const product = items[String(id)];
+      if (product) toggleWishlist(product);
     },
-    [items, persist]
+    [items, toggleWishlist]
   );
 
   const wishlistItems = Object.values(items);
@@ -64,7 +101,7 @@ export const WishlistProvider = ({ children }) => {
 
   return (
     <WishlistContext.Provider
-      value={{ items, wishlistItems, count, hydrated, isWishlisted, toggleWishlist, removeFromWishlist }}
+      value={{ items, wishlistItems, count, hydrated, isWishlisted, toggleWishlist, removeFromWishlist, syncFromServer }}
     >
       {children}
     </WishlistContext.Provider>

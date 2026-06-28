@@ -17,57 +17,64 @@ const removeTokens = async () => {
   await SecureStore.deleteItemAsync("refreshToken");
 };
 
-// --- API fetch wrapper with auto-refresh ---
-export const apiFetch = async (url, options = {}, navigation) => {
-  let accessToken = await getToken("accessToken");
-  let refreshToken = await getToken("refreshToken");
+// Single-flight refresh: when many requests hit 401 at once (e.g. the home
+// screen fires 8 calls in parallel), they all await the SAME refresh promise
+// instead of each firing its own /auth/refresh. Returns the new access token,
+// or null if the refresh failed (caller should log out).
+let refreshPromise = null;
 
-  let headers = {
-    ...(options.headers || {}),
-    Authorization: accessToken ? `Bearer ${accessToken}` : "",
-    "Content-Type": "application/json",
-  };
+const refreshAccessToken = async (refreshToken) => {
+  if (!refreshToken) return null;
+  if (refreshPromise) return refreshPromise;
 
-  let response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
-
-  // If token expired → try refresh
-  if (response.status === 401) {
-    log("⚠️ Access token expired, trying refresh…");
-
-    if (refreshToken) {
+  log("⚠️ Access token expired, trying refresh…");
+  refreshPromise = (async () => {
+    try {
       const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });
+      if (!refreshRes.ok) return null;
+      const data = await refreshRes.json();
+      const newAccessToken = data.accessToken;
+      if (newAccessToken) await setToken("accessToken", newAccessToken);
+      return newAccessToken || null;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
 
-      if (refreshRes.ok) {
-        const data = await refreshRes.json();
-        const newAccessToken = data.accessToken;
+  return refreshPromise;
+};
 
-        // Save only new access token
-        if (newAccessToken) await setToken("accessToken", newAccessToken);
+// --- API fetch wrapper with auto-refresh ---
+export const apiFetch = async (url, options = {}, navigation) => {
+  const accessToken = await getToken("accessToken");
 
-        // Retry original request with fresh access token
-        response = await fetch(`${API_BASE_URL}${url}`, {
-          ...options,
-          headers: {
-            ...headers,
-            Authorization: `Bearer ${newAccessToken}`,
-          },
-        });
-      } else {
-        await removeTokens();
-        if (navigation) navigation.replace("Login"); // redirect to login screen
-        return refreshRes; // stop here
-      }
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: accessToken ? `Bearer ${accessToken}` : "",
+    "Content-Type": "application/json",
+  };
+
+  let response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+
+  // If token expired → try a single shared refresh, then retry once.
+  if (response.status === 401) {
+    const refreshToken = await getToken("refreshToken");
+    const newAccessToken = await refreshAccessToken(refreshToken);
+
+    if (newAccessToken) {
+      response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers: { ...headers, Authorization: `Bearer ${newAccessToken}` },
+      });
     } else {
       await removeTokens();
       if (navigation) navigation.replace("Login");
-      return response; // stop here
     }
   }
 

@@ -4,7 +4,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Dimen
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { colors } from '../Themes/colors';
-import { apiFetch } from '../../src/apiFetch';
+import { apiFetch } from '../../apiFetch';
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 const screenWidth = Dimensions.get('window').width;

@@ -11,39 +11,39 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as SecureStore from "expo-secure-store";
 
 // Screens
-import SignupScreen from "./Components/Authentication/Signup";
-import LoginScreen from "./Components/Authentication/Login";
+import SignupScreen from "./src/components/Authentication/Signup";
+import LoginScreen from "./src/components/Authentication/Login";
 import AllNotifications from "./src/Screens/SplashScreens/AllNotifications";
-import HomeScreen from "./Components/Home";
-import ProductsScreen from "./Components/Products/ProductsScreen";
-import CartScreen from "./Components/Cart/CartScreen";
-import CheckoutScreen from "./Components/Cart/CheckoutScreen";
-import AddressScreen from "./Components/Cart/AddressScreen";
-import Categories from "./Components/Categories/Categories";
-import Subcategories from "./Components/Categories/Subcategories";
-import Products from "./Components/Categories/Products";
-import SearchScreen from "./Components/Products/SearchScreen";
-import SplashScreen from "./Components/SplashScreens/SplashScreen";
-import SplashScreen1 from "./Components/SplashScreens/SplashScreen1";
-import SplashScreen2 from "./Components/SplashScreens/SplashScreen2";
-import SplashScreen3 from "./Components/SplashScreens/SplashScreen3";
-import SplashScreen4 from "./Components/SplashScreens/SplashScreen4";
-import SplashScreen5 from "./Components/SplashScreens/SplashScreen5";
+import HomeScreen from "./src/components/Home";
+import ProductsScreen from "./src/components/Products/ProductsScreen";
+import CartScreen from "./src/components/Cart/CartScreen";
+import CheckoutScreen from "./src/components/Cart/CheckoutScreen";
+import AddressScreen from "./src/components/Cart/AddressScreen";
+import Categories from "./src/components/Categories/Categories";
+import Subcategories from "./src/components/Categories/Subcategories";
+import Products from "./src/components/Categories/Products";
+import SearchScreen from "./src/components/Products/SearchScreen";
+import SplashScreen from "./src/components/SplashScreens/SplashScreen";
+import SplashScreen1 from "./src/components/SplashScreens/SplashScreen1";
+import SplashScreen2 from "./src/components/SplashScreens/SplashScreen2";
+import SplashScreen3 from "./src/components/SplashScreens/SplashScreen3";
+import SplashScreen4 from "./src/components/SplashScreens/SplashScreen4";
+import SplashScreen5 from "./src/components/SplashScreens/SplashScreen5";
 
 
-import ServiceBookingForm from "./Components/Services/ServiceBookingForm";
-import UserDetailsScreen from "./Components/Cart/UserDetailsScreen";
-import UserScreen from "./Components/User/UserScreen";
-import AccountDetailScreen from "./Components/User/AccountDetailScreen";
-import CustomerSupportScreen from "./Components/User/CustomerSupportScreen";
-import FAQ from "./Components/User/FAQ";
-import Services from "./Components/Services/Services";
-import About from "./Components/User/About";
-import StripePayment from "./Components/Cart/StripePayment";
-import LogoutScreen from "./Components/User/LogoutScreen";
-import WishlistScreen from "./Components/Wishlist/WishlistScreen";
-import OrdersScreen from "./Components/Orders/OrdersScreen";
-import OrderDetailScreen from "./Components/Orders/OrderDetailScreen";
+import ServiceBookingForm from "./src/components/Services/ServiceBookingForm";
+import UserDetailsScreen from "./src/components/Cart/UserDetailsScreen";
+import UserScreen from "./src/components/User/UserScreen";
+import AccountDetailScreen from "./src/components/User/AccountDetailScreen";
+import CustomerSupportScreen from "./src/components/User/CustomerSupportScreen";
+import FAQ from "./src/components/User/FAQ";
+import Services from "./src/components/Services/Services";
+import About from "./src/components/User/About";
+import StripePayment from "./src/components/Cart/StripePayment";
+import LogoutScreen from "./src/components/User/LogoutScreen";
+import WishlistScreen from "./src/components/Wishlist/WishlistScreen";
+import OrdersScreen from "./src/components/Orders/OrdersScreen";
+import OrderDetailScreen from "./src/components/Orders/OrderDetailScreen";
 
 import Constants from "expo-constants";
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
@@ -78,7 +78,7 @@ const HeaderAction = ({ icon, onPress, badge, gradient }) => (
       </LinearGradient>
     ) : (
       <View style={styles.headerBtnPlain}>
-        <Icon name={icon} size={20} color={colors.text.primary} />
+        <Icon name={icon} size={20} color={colors.text.onPrimary} />
       </View>
     )}
     {badge > 0 ? (
@@ -102,12 +102,17 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg.canvas }]}>
-      {/* Premium header */}
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.bg.inverse }]}>
+      {/* Premium dark header — white logo reads clearly on the dark surface */}
+      <LinearGradient
+        colors={colors.gradients.dark}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <Image source={require("./assets/logo.png")} style={styles.logo} resizeMode="contain" />
 
-        <PressableScale
+        {/* <PressableScale
           style={styles.searchBar}
           onPress={() => navigation.navigate("SearchScreen")}
           accessibilityLabel="Search products"
@@ -117,11 +122,13 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
           <AppText variant="body" color="muted" style={{ marginLeft: 6 }}>
             Search products…
           </AppText>
-        </PressableScale>
-
-        <HeaderAction icon="favorite-border" onPress={() => navigation.navigate("Wishlist")} badge={wishlistCount} />
+        </PressableScale> */}
+         <View style={{ flexDirection: "row", gap: 12, }}>
+ <HeaderAction icon="favorite-border" onPress={() => navigation.navigate("Wishlist")} badge={wishlistCount} />
         <HeaderAction icon="notifications-none" onPress={() => navigation.navigate("allNotifications")} badge={unreadCount} gradient />
-      </View>
+         </View>
+       
+      </LinearGradient>
 
       <View style={styles.body}>{children}</View>
 
@@ -233,52 +240,62 @@ const App = () => {
     splashFlow();
   }, []);
 
+  const finishOnboarding = () => {
+    setIsSplash2Visible(false);
+    setIsSplash3Visible(false);
+    setIsSplash4Visible(false);
+    setIsSplash5Visible(false);
+  };
+
   if (isSplash1Visible)
     return (
-      <AppContainer backgroundColor={colors.brand.primaryDark}>
+      <AppContainer backgroundColor={colors.palette.emerald900}>
         <SplashScreen1 />
       </AppContainer>
     );
 
   if (isSplash2Visible)
     return (
-      <AppContainer backgroundColor={colors.bg.canvas}>
+      <AppContainer backgroundColor={colors.bg.inverse}>
         <SplashScreen2
           onNext={() => {
             setIsSplash2Visible(false);
             setIsSplash3Visible(true);
           }}
+          onSkip={finishOnboarding}
         />
       </AppContainer>
     );
 
   if (isSplash3Visible)
     return (
-      <AppContainer backgroundColor={colors.bg.canvas}>
+      <AppContainer backgroundColor={colors.bg.inverse}>
         <SplashScreen3
           onNext={() => {
             setIsSplash3Visible(false);
             setIsSplash4Visible(true);
           }}
+          onSkip={finishOnboarding}
         />
       </AppContainer>
     );
 
   if (isSplash4Visible)
     return (
-      <AppContainer backgroundColor={colors.bg.canvas}>
+      <AppContainer backgroundColor={colors.bg.inverse}>
         <SplashScreen4
           onNext={() => {
             setIsSplash4Visible(false);
             setIsSplash5Visible(true);
           }}
+          onSkip={finishOnboarding}
         />
       </AppContainer>
     );
 
   if (isSplash5Visible)
     return (
-      <AppContainer backgroundColor={colors.bg.canvas}>
+      <AppContainer backgroundColor={colors.bg.inverse}>
         <SplashScreen5 onNext={() => setIsSplash5Visible(false)} />
       </AppContainer>
     );
@@ -292,7 +309,7 @@ const App = () => {
 
 
   return (
-    <AppContainer backgroundColor={colors.bg.canvas} barStyle="dark-content">
+    <AppContainer backgroundColor={colors.bg.inverse} barStyle="light-content">
       <ErrorBoundary>
         <StripeProvider publishableKey={stripeKey} merchantDisplayName="Basit Sanitary App">
           <NotificationProvider>
@@ -352,13 +369,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: theme.space["4xl"],
-    paddingBottom: theme.space.md,
+    paddingBottom: theme.space.lg,
     paddingHorizontal: theme.space.lg,
     gap: theme.space.sm,
-    backgroundColor: colors.bg.canvas,
+    backgroundColor: colors.bg.inverse,
   },
-  logo: { width: 38, height: 38, borderRadius: theme.radius.md },
+  logo: { width: 80, height: 50, borderRadius: theme.radius.md },
   searchBar: {
     flex: 1,
     flexDirection: "row",
@@ -382,10 +400,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: theme.radius.pill,
-    backgroundColor: colors.bg.surface,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
     justifyContent: "center",
     alignItems: "center",
-    ...theme.shadow.e1,
   },
   headerBadge: {
     position: "absolute",
@@ -399,7 +418,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: colors.bg.canvas,
+    borderColor: colors.bg.inverse,
   },
-  body: { flex: 1 },
+  body: { flex: 1, backgroundColor: colors.bg.canvas },
 });

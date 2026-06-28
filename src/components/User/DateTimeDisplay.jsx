@@ -22,23 +22,19 @@ const DateTimeDisplay = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width:'100%',
-    flex: 1,
     flexDirection:'row',
-    justifyContent: "center",
     alignItems: "center",
-    gap:15
-    // backgroundColor: "#fff",
+    gap:8,
   },
   dateText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color:'#E0E0E0'
+    fontSize: 12,
+    fontWeight: "600",
+    color:'#D7E4DD'
   },
   timeText: {
-    fontSize: 14,
-    fontWeight: "bold",
-     color:'#E0E0E0'
+    fontSize: 12,
+    fontWeight: "700",
+     color:'#FFFFFF'
   },
 });
 

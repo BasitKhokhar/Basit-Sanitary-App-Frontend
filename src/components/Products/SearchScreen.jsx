@@ -12,7 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProductModal from "./ProductModal";
 import Constants from "expo-constants";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 

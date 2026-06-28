@@ -12,7 +12,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProductModal from "../Products/ProductModal";
 import { colors } from "../Themes/colors";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 import Constants from "expo-constants";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;

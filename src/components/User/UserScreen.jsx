@@ -12,20 +12,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import SocialIconsRow from "./SocialIconsRow";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 
-import { CartContext } from "../../src/ContextApis/cartContext";
-import { useWishlist } from "../../src/ContextApis/WishlistContext";
-import AppText from "../../src/components/ui/Text";
-import Button from "../../src/components/ui/Button";
-import Card from "../../src/components/ui/Card";
-import { Skeleton } from "../../src/components/ui/Skeleton";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
-import { shadows } from "../../src/theme/shadows";
+import { CartContext } from "../../ContextApis/cartContext";
+import { useWishlist } from "../../ContextApis/WishlistContext";
+import AppText from "../../components/ui/Text";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { Skeleton } from "../../components/ui/Skeleton";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const UserScreen = () => {
   const navigation = useNavigation();
@@ -195,8 +195,12 @@ const UserScreen = () => {
               Are you sure you want to logout?
             </AppText>
             <View style={styles.modalButtons}>
-              <Button title="Cancel" variant="secondary" onPress={() => setShowLogoutModal(false)} style={{ flex: 1, marginRight: space.sm }} />
-              <Button title="Logout" variant="danger" onPress={handleLogout} style={{ flex: 1, marginLeft: space.sm }} />
+              <View style={{ flex: 1, marginRight: space.sm }}>
+                <Button title="Cancel" variant="secondary" onPress={() => setShowLogoutModal(false)} />
+              </View>
+              <View style={{ flex: 1, marginLeft: space.sm }}>
+                <Button title="Logout" variant="danger" onPress={handleLogout} />
+              </View>
             </View>
           </Card>
         </View>

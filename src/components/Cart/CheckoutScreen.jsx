@@ -4,16 +4,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useStripe } from "@stripe/stripe-react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 import PaymentMethodModal from "./PaymentmethodsModel";
 
-import AppText from "../../src/components/ui/Text";
-import Button from "../../src/components/ui/Button";
-import Card from "../../src/components/ui/Card";
-import Badge from "../../src/components/ui/Badge";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
+import AppText from "../../components/ui/Text";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
 
 const TRUST = [
   { icon: "verified-user", label: "Secure payment" },
@@ -114,7 +114,7 @@ const CheckoutScreen = () => {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
-            <AppText variant="h2" style={{ marginBottom: space.md }}>Checkout</AppText>
+           
             <View style={styles.trustRow}>
               {TRUST.map((t) => (
                 <View key={t.label} style={styles.trustItem}>

@@ -9,6 +9,11 @@ export const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0);
 
+  // Optimistic update — adjust the badge instantly while the API call is
+  // in flight, so the UI feels instant (count is reconciled by fetchCartCount).
+  const bumpCartCount = (delta) =>
+    setCartCount((c) => Math.max(0, c + delta));
+
   // Fetch cart count from backend
   const fetchCartCount = async () => {
     try {
@@ -30,7 +35,7 @@ export const CartProvider = ({ children }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cartCount, fetchCartCount }}>
+    <CartContext.Provider value={{ cartCount, fetchCartCount, bumpCartCount, setCartCount }}>
       {children}
     </CartContext.Provider>
   );

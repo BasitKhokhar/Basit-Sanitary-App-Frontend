@@ -16,9 +16,9 @@ import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useNotification } from '../../src/ContextApis/NotificationsContext';
+import { useNotification } from '../../ContextApis/NotificationsContext';
 import { colors } from '../Themes/colors';
-import { apiFetch } from '../../src/apiFetch';
+import { apiFetch } from '../../apiFetch';
 import Constants from 'expo-constants';
 import Icon from "@expo/vector-icons/MaterialIcons";
 

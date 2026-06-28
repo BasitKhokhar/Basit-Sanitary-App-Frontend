@@ -1,10 +1,29 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Platform,
+  StatusBar,
+  KeyboardAvoidingView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Icon from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
-import { colors } from '../Themes/colors';
+
+import AppText from '../../components/ui/Text';
+import Button from '../../components/ui/Button';
+import InputField from '../../components/ui/InputField';
+import PressableScale from '../../components/ui/PressableScale';
+import { colors } from '../../theme/colors';
+import { space } from '../../theme/spacing';
+import { radius } from '../../theme/radius';
+import { shadows } from '../../theme/shadows';
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+const TOP_INSET = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
 
 const ServiceBookingForm = ({ route, navigation }) => {
   const { technicianId, techuserID, loginUserId } = route.params;
@@ -16,19 +35,26 @@ const ServiceBookingForm = ({ route, navigation }) => {
   const [description, setDescription] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const hasLocation = !!latitude && !!longitude;
 
   const getLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Location access is required.');
-      return;
-    }
+    setLocating(true);
     try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location access is required.');
+        return;
+      }
       let loc = await Location.getCurrentPositionAsync({});
       setLatitude(loc.coords.latitude.toString());
       setLongitude(loc.coords.longitude.toString());
     } catch (error) {
       Alert.alert('Error', 'Could not retrieve location.');
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -42,12 +68,13 @@ const ServiceBookingForm = ({ route, navigation }) => {
 
   const submitBooking = async () => {
     if (!validateInputs()) return;
+    setSubmitting(true);
     const bookingData = { techuserID, loginUserId, name, email, phone, city, description, latitude, longitude };
     try {
       const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
+        body: JSON.stringify(bookingData),
       });
 
       if (response.ok) {
@@ -58,146 +85,212 @@ const ServiceBookingForm = ({ route, navigation }) => {
       }
     } catch (error) {
       Alert.alert('Error', 'Error submitting booking.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bodybackground }]}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Gradient hero */}
+        <LinearGradient
+          colors={colors.gradients.emeraldDeep}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroTop}>
+            <PressableScale
+              onPress={() => navigation.goBack()}
+              accessibilityLabel="Go back"
+              style={styles.backBtn}
+            >
+              <Icon name="arrow-back" size={22} color={colors.text.onPrimary} />
+            </PressableScale>
+            <View style={styles.heroBadge}>
+              <Icon name="plumbing" size={26} color={colors.text.onPrimary} />
+            </View>
+          </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.heading}>Fill this form to book a Plumber</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Name"
-          value={name}
-          onChangeText={setName}
-          placeholderTextColor={colors.mutedText}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          placeholderTextColor={colors.mutedText}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Phone"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          placeholderTextColor={colors.mutedText}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="City"
-          value={city}
-          onChangeText={setCity}
-          placeholderTextColor={colors.mutedText}
-        />
-        <TextInput
-          style={[styles.input, { height: 100, textAlignVertical: 'top'}]}
-          placeholder="Description"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          placeholderTextColor={colors.mutedText}
-        />
+          <AppText variant="h1" color="onPrimary" weight="800" style={{ marginTop: space.lg }}>
+            Book a Plumber
+          </AppText>
+          <AppText variant="body" style={{ color: colors.brand.tint, marginTop: 6, maxWidth: 280 }}>
+            Share your details and location — we'll dispatch your technician shortly.
+          </AppText>
+        </LinearGradient>
 
-        <Text style={styles.note}>
-          Latitude and Longitude will automatically be filled when you click 'Take Current Location'
-        </Text>
-        <TouchableOpacity style={styles.locationButton} onPress={getLocation}>
-          <Text style={[styles.buttonText, { color: colors.primary }]}>Take Location</Text>
-        </TouchableOpacity>
-        <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
-          <TextInput
-            style={[styles.input,{flex:1}]}
-            placeholder="Latitude"
-            value={latitude}
-            editable={false}
-            placeholderTextColor={colors.mutedText}
+        {/* Form card */}
+        <View style={styles.card}>
+          <View style={styles.sectionRow}>
+            <Icon name="person" size={18} color={colors.brand.primary} />
+            <AppText variant="label" color="secondary" weight="700" style={{ marginLeft: 6 }}>
+              YOUR DETAILS
+            </AppText>
+          </View>
+
+          <InputField
+            label="Full Name"
+            placeholder="Enter your name"
+            value={name}
+            onChangeText={setName}
+            icon="badge"
           />
-          <TextInput
-             style={[styles.input,{flex:1}]}
-            placeholder="Longitude"
-            value={longitude}
-            editable={false}
-            placeholderTextColor={colors.mutedText}
+          <InputField
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            icon="email"
+          />
+          <InputField
+            label="Phone"
+            placeholder="03xx-xxxxxxx"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            icon="phone"
+          />
+          <InputField
+            label="City"
+            placeholder="Your city"
+            value={city}
+            onChangeText={setCity}
+            icon="location-city"
+          />
+          <InputField
+            label="Problem Description"
+            placeholder="Briefly describe the issue..."
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            icon="description"
           />
 
+          <View style={[styles.sectionRow, { marginTop: space.sm }]}>
+            <Icon name="my-location" size={18} color={colors.brand.primary} />
+            <AppText variant="label" color="secondary" weight="700" style={{ marginLeft: 6 }}>
+              LOCATION
+            </AppText>
+          </View>
+
+          {/* Location capture card */}
+          <View style={[styles.locationCard, hasLocation && styles.locationCardActive]}>
+            <View style={styles.locationIconWrap}>
+              <Icon
+                name={hasLocation ? 'check-circle' : 'place'}
+                size={24}
+                color={hasLocation ? colors.status.success : colors.brand.primary}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: space.md }}>
+              <AppText variant="bodyLg" weight="700">
+                {hasLocation ? 'Location captured' : 'Pin your location'}
+              </AppText>
+              <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 2 }}>
+                {hasLocation
+                  ? `${Number(latitude).toFixed(5)}, ${Number(longitude).toFixed(5)}`
+                  : 'Tap below to auto-fill coordinates'}
+              </AppText>
+            </View>
+          </View>
+
+          <Button
+            title={hasLocation ? 'Update Location' : 'Take Current Location'}
+            variant="secondary"
+            icon="gps-fixed"
+            loading={locating}
+            onPress={getLocation}
+            style={{ marginTop: space.lg }}
+          />
+
+          <Button
+            title="Submit Booking"
+            icon="check"
+            loading={submitting}
+            onPress={submitBooking}
+            style={{ marginTop: space.md }}
+          />
+
+          <AppText variant="caption" color="muted" align="center" style={{ marginTop: space.md }}>
+            By submitting, you agree to be contacted about this booking.
+          </AppText>
         </View>
-
-
-
-        <TouchableOpacity style={styles.submitButton} onPress={submitBooking}>
-          <Text style={styles.buttonText}>Submit Booking</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  scrollContent: { paddingBottom: 40 },
+
+  hero: {
+    paddingTop: TOP_INSET + space.lg,
+    paddingHorizontal: space.xl,
+    paddingBottom: space['3xl'],
+    borderBottomLeftRadius: radius['2xl'],
+    borderBottomRightRadius: radius['2xl'],
+    ...shadows.e3,
   },
-  heading: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginVertical: 10,
-  },
-  formContainer: {
-    marginTop: 20,
-    backgroundColor: colors.cardsbackground,
-    marginHorizontal: 15,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    backgroundColor: colors.bodybackground,
-    color: colors.text,
-    fontSize: 16,
-  },
-  note: {
-    fontSize: 13,
-    color: colors.mutedText,
-    marginBottom: 10,
-  },
-  locationButton: {
-    backgroundColor: colors.cardsbackground, borderWidth: 1.5, borderColor: colors.primary,
-    paddingVertical: 15,
-    borderRadius: 12,
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 10,
   },
-  submitButton: {
-    backgroundColor: colors.accent,
-    paddingVertical: 15,
-    borderRadius: 12,
+  heroBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 15,
   },
-  buttonText: {
-    color: colors.bodybackground,
-    fontSize: 18,
-    fontWeight: 'bold',
+
+  card: {
+    marginTop: -space.xl,
+    marginHorizontal: space.lg,
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.xl,
+    padding: space.xl,
+    ...shadows.e2,
+  },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: space.lg },
+
+  locationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bg.sunken,
+    borderRadius: radius.lg,
+    padding: space.md,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  locationCardActive: {
+    backgroundColor: colors.bg.tint,
+    borderColor: colors.brand.primaryLight,
+  },
+  locationIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

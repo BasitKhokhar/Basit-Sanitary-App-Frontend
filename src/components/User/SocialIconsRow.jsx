@@ -13,7 +13,7 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../Themes/colors";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 

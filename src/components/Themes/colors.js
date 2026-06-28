@@ -5,10 +5,10 @@
 // `import { colors } from ".../Themes/colors"` keeps working unchanged.
 //
 // NEW code should import from "src/theme" instead:
-//   import { theme, colors as tokens } from "../../src/theme";
+//   import { theme, colors as tokens } from "../../theme";
 // ============================================================================
 
-import { colors as t } from "../../src/theme/colors";
+import { colors as t } from "../../theme/colors";
 
 export const colors = {
   // --- legacy flat keys (mapped to new semantic tokens) ---

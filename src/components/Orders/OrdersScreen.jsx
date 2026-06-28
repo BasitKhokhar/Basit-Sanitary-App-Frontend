@@ -5,14 +5,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
-import { apiFetch } from "../../src/apiFetch";
-import { endpoints } from "../../src/services/endpoints";
-import Card from "../../src/components/ui/Card";
-import AppText from "../../src/components/ui/Text";
-import Badge from "../../src/components/ui/Badge";
-import EmptyState from "../../src/components/ui/EmptyState";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
+import { apiFetch } from "../../apiFetch";
+import { endpoints } from "../../services/endpoints";
+import Card from "../../components/ui/Card";
+import AppText from "../../components/ui/Text";
+import Badge from "../../components/ui/Badge";
+import EmptyState from "../../components/ui/EmptyState";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
 
 const STATUS_TONE = {
   pending: "warning",

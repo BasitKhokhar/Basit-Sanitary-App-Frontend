@@ -1,8 +1,13 @@
 // ProductCarousel — horizontal product rail with a section header.
 // Single implementation replacing OnSaleProducts / TrendingProducts /
 // Completesets duplication. Pass data + handlers.
+//
+// variant:
+//   "standard" (default) — compact image-first cards (Trending / On Sale).
+//   "showcase"           — wider full-bleed cards for curated collections
+//                          (Complete Sets).
 
-import React from "react";
+import React, { useMemo } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import ProductCard from "./ProductCard";
@@ -12,13 +17,14 @@ import { ProductCardSkeleton } from "../ui/Skeleton";
 import { colors } from "../../theme/colors";
 import { space } from "../../theme/spacing";
 
-const CARD_WIDTH = 160;
+const CARD_WIDTH = { standard: 164, showcase: 240 };
 
 const ProductCarousel = ({
   title,
   subtitle,
   data = [],
   loading = false,
+  variant = "standard",
   onSeeAll,
   onPressItem,
   onAddToCart,
@@ -26,6 +32,22 @@ const ProductCarousel = ({
   onToggleWishlist,
   style,
 }) => {
+  const cardWidth = CARD_WIDTH[variant] || CARD_WIDTH.standard;
+
+  // The backend can return the same product more than once (e.g. a JOIN over
+  // images/finishes without DISTINCT). Dedupe by id so we never render a
+  // product twice or collide on FlatList keys ("two children with same key").
+  const items = useMemo(() => {
+    const seen = new Set();
+    return (data || []).filter((p) => {
+      const id = p?.id;
+      if (id == null) return true; // keep id-less rows; key falls back to index
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [data]);
+
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.header}>
@@ -50,21 +72,22 @@ const ProductCarousel = ({
       {loading ? (
         <View style={styles.row}>
           {[0, 1, 2].map((i) => (
-            <ProductCardSkeleton key={i} width={CARD_WIDTH} />
+            <ProductCardSkeleton key={i} width={cardWidth} />
           ))}
         </View>
       ) : (
         <FlatList
           horizontal
-          data={data}
-          keyExtractor={(item, i) => String(item?.id ?? i)}
+          data={items}
+          keyExtractor={(item, i) => String(item?.id ?? `idx-${i}`)}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
           renderItem={({ item }) => (
             <ProductCard
               product={item}
-              width={CARD_WIDTH}
+              width={cardWidth}
+              variant={variant}
               onPress={onPressItem}
               onAddToCart={onAddToCart}
               wishlisted={isWishlisted?.(item.id)}
@@ -78,7 +101,7 @@ const ProductCarousel = ({
 };
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: space.xl },
+  wrap: { marginBottom: space["2xl"] },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -86,8 +109,10 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   seeAll: { flexDirection: "row", alignItems: "center" },
-  listContent: { paddingHorizontal: space.lg },
-  row: { flexDirection: "row", paddingHorizontal: space.lg, gap: space.md },
+  // Vertical padding gives the card shadows room to render and keeps the rail
+  // from touching the next section's heading.
+  listContent: { paddingHorizontal: space.lg, paddingVertical: space.sm },
+  row: { flexDirection: "row", paddingHorizontal: space.lg, paddingVertical: space.sm, gap: space.md },
 });
 
 export default React.memo(ProductCarousel);

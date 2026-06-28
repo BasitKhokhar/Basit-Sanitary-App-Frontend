@@ -9,28 +9,28 @@ import {
   Dimensions,
 } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
-import { CartContext } from "../../src/ContextApis/cartContext";
-import { useWishlist } from "../../src/ContextApis/WishlistContext";
-import { apiFetch } from "../../src/apiFetch";
-import { endpoints } from "../../src/services/endpoints";
+import { CartContext } from "../../ContextApis/cartContext";
+import { useWishlist } from "../../ContextApis/WishlistContext";
+import { apiFetch } from "../../apiFetch";
+import { endpoints } from "../../services/endpoints";
 
-import AppText from "../../src/components/ui/Text";
-import Button from "../../src/components/ui/Button";
-import Badge from "../../src/components/ui/Badge";
-import PriceTag from "../../src/components/ui/PriceTag";
-import RatingStars from "../../src/components/ui/RatingStars";
-import HeartButton from "../../src/components/ui/HeartButton";
-import InputField from "../../src/components/ui/InputField";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
-import { shadows } from "../../src/theme/shadows";
+import AppText from "../../components/ui/Text";
+import Button from "../../components/ui/Button";
+import Badge from "../../components/ui/Badge";
+import PriceTag from "../../components/ui/PriceTag";
+import RatingStars from "../../components/ui/RatingStars";
+import HeartButton from "../../components/ui/HeartButton";
+import InputField from "../../components/ui/InputField";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const { width, height } = Dimensions.get("window");
 const colorOptions = ["White", "Half White", "Chrome", "Light Pink", "Light Grey", "Burgundy"];
 
 const ProductModal = ({ product, onClose, userId }) => {
-  const { fetchCartCount } = useContext(CartContext);
+  const { fetchCartCount, bumpCartCount } = useContext(CartContext);
   const { isWishlisted, toggleWishlist } = useWishlist();
 
   const [selectedColor, setSelectedColor] = useState(null);
@@ -67,49 +67,76 @@ const ProductModal = ({ product, onClose, userId }) => {
       ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length
       : Number(product.rating || 0);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
+    if (outOfStock || adding) return;
+
+    // Optimistic: reflect the action immediately, then sync with the server.
     setAdding(true);
-    try {
-      const res = await apiFetch(endpoints.cart.add, {
-        method: "POST",
-        body: JSON.stringify({
-          ...product,
-          selectedColor: selectedColor || "None",
-          quantity: 1,
-          user_id: userId,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setToast(data.message || "Added to cart");
+    bumpCartCount(1);
+    setToast("Added to cart");
+
+    apiFetch(endpoints.cart.add, {
+      method: "POST",
+      body: JSON.stringify({
+        ...product,
+        selectedColor: selectedColor || "None",
+        quantity: 1,
+        user_id: userId,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("add failed");
+        // Reconcile badge with the authoritative server count.
         fetchCartCount();
-        setTimeout(() => {
-          setToast("");
-          onClose();
-        }, 1400);
-      }
-    } catch (e) {
-      if (__DEV__) console.error("add to cart error", e);
-    } finally {
+      })
+      .catch((e) => {
+        // Roll back the optimistic bump if the server rejected the add.
+        bumpCartCount(-1);
+        setToast("Couldn't add — try again");
+        if (__DEV__) console.warn("add to cart error", e);
+      });
+
+    setTimeout(() => {
       setAdding(false);
-    }
+      setToast("");
+      onClose();
+    }, 1100);
   };
 
   const submitReview = async () => {
     if (!myRating) return;
     setSubmitting(true);
+
+    // Optimistic: show the review instantly at the top of the list.
+    const optimistic = {
+      id: `local-${Date.now()}`,
+      rating: myRating,
+      comment: myReview,
+      user_name: "You",
+      _optimistic: true,
+    };
+    setReviews((prev) => [optimistic, ...prev]);
+    const sentRating = myRating;
+    const sentComment = myReview;
+    setMyReview("");
+    setMyRating(0);
+
     try {
       const res = await apiFetch(endpoints.products.reviews(product.id), {
         method: "POST",
-        body: JSON.stringify({ rating: myRating, comment: myReview, user_id: userId }),
+        body: JSON.stringify({ rating: sentRating, comment: sentComment, user_id: userId }),
       });
       if (res.ok) {
-        setMyReview("");
-        setMyRating(0);
-        loadReviews();
+        loadReviews(); // reconcile with the server's canonical list
+      } else {
+        throw new Error("submit failed");
       }
     } catch (e) {
-      if (__DEV__) console.warn("submit review failed (endpoint may be missing)", e);
+      // Roll back the optimistic review on failure.
+      setReviews((prev) => prev.filter((r) => r.id !== optimistic.id));
+      setMyRating(sentRating);
+      setMyReview(sentComment);
+      if (__DEV__) console.warn("submit review failed", e);
     } finally {
       setSubmitting(false);
     }

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 
-import { colors } from "../../../Components/Themes/colors";
+import { colors } from "../../components/Themes/colors";
 import { apiFetch } from "../../apiFetch";
 import { useNavigation } from "@react-navigation/native";
 // import { useNotifications } from "../../Context/NotificationContext";

@@ -11,19 +11,18 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import ProductModal from "./ProductModal";
-import { apiFetch } from "../../src/apiFetch";
-import { endpoints } from "../../src/services/endpoints";
-import { CartContext } from "../../src/ContextApis/cartContext";
-import { useWishlist } from "../../src/ContextApis/WishlistContext";
-import ProductCard from "../../src/components/commerce/ProductCard";
-import { ProductCardSkeleton } from "../../src/components/ui/Skeleton";
-import AppText from "../../src/components/ui/Text";
-import Sheet from "../../src/components/ui/Sheet";
-import EmptyState from "../../src/components/ui/EmptyState";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
-import { shadows } from "../../src/theme/shadows";
+import { apiFetch } from "../../apiFetch";
+import { endpoints } from "../../services/endpoints";
+import { useWishlist } from "../../ContextApis/WishlistContext";
+import ProductCard from "../../components/commerce/ProductCard";
+import { ProductCardSkeleton } from "../../components/ui/Skeleton";
+import AppText from "../../components/ui/Text";
+import Sheet from "../../components/ui/Sheet";
+import EmptyState from "../../components/ui/EmptyState";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
 
 const { width } = Dimensions.get("window");
 const GAP = space.lg;
@@ -38,7 +37,6 @@ const SORTS = [
 ];
 
 const ProductsScreen = () => {
-  const { fetchCartCount } = useContext(CartContext);
   const { isWishlisted, toggleWishlist } = useWishlist();
 
   const [products, setProducts] = useState([]);
@@ -84,7 +82,11 @@ const ProductsScreen = () => {
         const fetched = sortList(data.products || [], sortOrder);
 
         if (pageNum === 1) setProducts(fetched);
-        else setProducts((prev) => [...prev, ...fetched]);
+        else
+          setProducts((prev) => {
+            const seen = new Set(prev.map((p) => p.id));
+            return [...prev, ...fetched.filter((p) => !seen.has(p.id))];
+          });
 
         setHasMore(data.hasMore);
         setPage(pageNum);
@@ -113,17 +115,9 @@ const ProductsScreen = () => {
     fetchProducts(page + 1);
   };
 
-  const handleAddToCart = async (product) => {
-    try {
-      await apiFetch(endpoints.cart.add, {
-        method: "POST",
-        body: JSON.stringify({ ...product, quantity: 1, user_id: userId, selectedColor: "None" }),
-      });
-      fetchCartCount();
-    } catch (e) {
-      if (__DEV__) console.warn("add to cart failed", e);
-    }
-  };
+  // Tapping the cart icon opens the product/cart modal first (choose finish,
+  // review details) — the actual add happens from inside the modal.
+  const openCartModal = (product) => setSelectedProduct(product);
 
   const pickSort = (value) => {
     setSortOrder(value);
@@ -172,7 +166,7 @@ const ProductsScreen = () => {
               product={item}
               width={CARD_WIDTH}
               onPress={setSelectedProduct}
-              onAddToCart={handleAddToCart}
+              onAddToCart={openCartModal}
               wishlisted={isWishlisted(item.id)}
               onToggleWishlist={toggleWishlist}
             />

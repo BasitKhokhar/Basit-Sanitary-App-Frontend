@@ -34,6 +34,7 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="basitsanitaryapp"/>
         <data android:scheme="exp+basit-sanitary-app"/>
+        <data android:scheme="exp+basit-sanitary"/>
       </intent-filter>
     </activity>
   </application>

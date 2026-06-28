@@ -1,8 +1,13 @@
-// TabBar — premium floating bottom tab bar with spring active pill + badges.
+// TabBar — premium "chrome pipe" bottom bar for a sanitary / plumbing brand.
+// The bar is styled as a polished chrome water pipe (brushed-steel cylinder with
+// a top reflection + joint seams). The active tab is a glowing emerald "water
+// valve" knob that springs along the pipe like a slider on a fixture rail.
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
+  useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
@@ -19,38 +24,49 @@ import { motion } from "../../theme/motion";
 
 const TABS = [
   { name: "Home", icon: "home", label: "Home" },
-  { name: "Products", icon: "grid-view", label: "Shop" },
+  { name: "Products", icon: "storefront", label: "Shop" },
   { name: "Cart", icon: "shopping-bag", label: "Cart" },
-  { name: "Services", icon: "build", label: "Services" },
+  { name: "Services", icon: "plumbing", label: "Services" },
   { name: "Profile", icon: "person", label: "Profile" },
 ];
 
-const TabItem = ({ tab, active, onPress, badge }) => {
-  const pillStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(active ? 1 : 0, { duration: motion.duration.fast }),
-    transform: [{ scale: withSpring(active ? 1 : 0.6, motion.spring.bouncy) }],
-  }));
+const BAR_HEIGHT = 64;
+const KNOB = 52;
 
-  const iconLift = useAnimatedStyle(() => ({
+// The bar is re-mounted on every tab change (each screen renders its own MainLayout +
+// TabBar). Remembering the last active index at module scope lets a freshly-mounted bar
+// start the valve knob where the previous screen's knob actually was, then spring to the
+// current tab — so the slide reads "previous → next" instead of jumping from the far left.
+let lastActiveIndex = 0;
+
+// Brushed-chrome cylinder: top highlight -> body -> bottom shade gives the pipe
+// its rounded, metallic feel.
+const CHROME = ["#FFFFFF", colors.palette.mist, colors.palette.slate200, colors.palette.slate300];
+
+const TabItem = ({ tab, active, onPress, badge }) => {
+  const lift = useAnimatedStyle(() => ({
     transform: [{ translateY: withSpring(active ? -2 : 0, motion.spring.gentle) }],
   }));
 
   return (
-    <PressableScale onPress={onPress} style={styles.item} accessibilityLabel={tab.label} scaleTo={0.9}>
-      <Animated.View style={[styles.pill, pillStyle]}>
-        <LinearGradient
-          colors={colors.gradients.emeraldGlow}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
+    <PressableScale
+      onPress={onPress}
+      style={styles.item}
+      accessibilityLabel={tab.label}
+      accessibilityState={{ selected: active }}
+      scaleTo={0.9}
+    >
+      <Animated.View style={[styles.iconWrap, lift]}>
+        {/* Active icon lives on the sliding valve knob, so hide it here. */}
+        <Icon
+          name={tab.icon}
+          size={23}
+          color={colors.text.secondary}
+          style={{ opacity: active ? 0 : 1 }}
         />
-      </Animated.View>
-
-      <Animated.View style={[styles.iconWrap, iconLift]}>
-        <Icon name={tab.icon} size={22} color={active ? colors.text.onPrimary : colors.text.muted} />
         {badge > 0 ? (
           <View style={styles.badge}>
-            <AppText variant="micro" style={{ color: colors.text.onPrimary }} weight="800">
+            <AppText variant="micro" weight="800" style={{ color: colors.text.onPrimary }}>
               {badge > 99 ? "99+" : badge}
             </AppText>
           </View>
@@ -59,8 +75,16 @@ const TabItem = ({ tab, active, onPress, badge }) => {
 
       <AppText
         variant="micro"
-        weight={active ? "700" : "500"}
-        style={{ color: active ? colors.brand.primaryDark : colors.text.muted, marginTop: 2 }}
+        weight={active ? "800" : "600"}
+        numberOfLines={1}
+        style={{
+          color: active ? colors.brand.primaryDark : colors.text.muted,
+          marginTop: 4,
+          letterSpacing: 0.3,
+          // Keep the label above the chrome but below the floating knob's z-layer so the
+          // text always reads clearly and never sits hidden behind the emerald circle.
+          zIndex: 1,
+        }}
       >
         {tab.label}
       </AppText>
@@ -68,46 +92,147 @@ const TabItem = ({ tab, active, onPress, badge }) => {
   );
 };
 
-const TabBar = ({ current, onNavigate, cartCount = 0 }) => (
-  <View style={styles.wrap}>
-    <View style={styles.bar}>
-      {TABS.map((tab) => (
-        <TabItem
-          key={tab.name}
-          tab={tab}
-          active={current === tab.name}
-          onPress={() => onNavigate(tab.name)}
-          badge={tab.name === "Cart" ? cartCount : 0}
-        />
-      ))}
+const TabBar = ({ current, onNavigate, cartCount = 0 }) => {
+  const insets = useSafeAreaInsets();
+  const bottom = Math.max(insets.bottom, space.md) + space.xs;
+
+  const [rowW, setRowW] = useState(0);
+  const activeIndex = Math.max(0, TABS.findIndex((t) => t.name === current));
+  const itemW = rowW / TABS.length;
+
+  // Centered x of the knob for a given tab index.
+  const knobX = (i) => i * itemW + itemW / 2 - KNOB / 2;
+
+  // Slide the valve knob to sit centered under the active tab.
+  const tx = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const placed = useRef(false);
+
+  useEffect(() => {
+    if (!rowW) return;
+    const target = knobX(activeIndex);
+
+    if (!placed.current) {
+      // First layout of this mounted bar: drop the knob where it was on the previous
+      // screen, then spring to the current tab so the transition slides continuously.
+      tx.value = knobX(lastActiveIndex);
+      tx.value = withSpring(target, motion.spring.gentle);
+      opacity.value = withTiming(1, { duration: 140 });
+      placed.current = true;
+    } else {
+      // Same instance still mounted (e.g. tab tapped without remount) — just glide over.
+      tx.value = withSpring(target, motion.spring.gentle);
+    }
+
+    lastActiveIndex = activeIndex;
+  }, [activeIndex, rowW, itemW]);
+
+  const knobStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: tx.value }],
+  }));
+
+  const activeTab = TABS[activeIndex];
+
+  return (
+    <View style={[styles.wrap, { bottom }]}>
+      <View style={styles.pipe}>
+        {/* Clipped chrome body (rounded) — kept separate so the valve knob can
+            protrude above the pipe without being clipped. */}
+        <View style={styles.clip}>
+          <LinearGradient
+            colors={CHROME}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Glossy reflection running along the top of the cylinder. */}
+          <View style={styles.reflection} />
+          {/* Joint seams hint at pipe couplings near each end. */}
+          <View style={[styles.seam, { left: "16%" }]} />
+          <View style={[styles.seam, { right: "16%" }]} />
+        </View>
+
+        {/* Tab targets + labels. */}
+        <View
+          style={styles.row}
+          onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
+        >
+          {TABS.map((tab) => (
+            <TabItem
+              key={tab.name}
+              tab={tab}
+              active={current === tab.name}
+              onPress={() => onNavigate(tab.name)}
+              badge={tab.name === "Cart" ? cartCount : 0}
+            />
+          ))}
+        </View>
+
+        {/* Emerald "water valve" — the active indicator that slides along the pipe. */}
+        {rowW > 0 ? (
+          <Animated.View style={[styles.knob, knobStyle]}>
+            <View style={styles.knobBezel}>
+              <LinearGradient
+                colors={colors.gradients.emeraldGlow}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={styles.knobFill}
+              >
+                {/* Wet-look highlight on the valve. */}
+                <View style={styles.knobShine} />
+                <Icon name={activeTab.icon} size={24} color={colors.text.onPrimary} />
+              </LinearGradient>
+            </View>
+          </Animated.View>
+        ) : null}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: space.lg, right: space.lg, bottom: space.lg },
-  bar: {
-    flexDirection: "row",
-    backgroundColor: colors.bg.surface,
-    borderRadius: radius.xl,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.xs,
+  wrap: { position: "absolute", left: space.lg, right: space.lg },
+  pipe: {
+    height: BAR_HEIGHT,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.palette.slate300,
+    backgroundColor: colors.palette.mist,
     ...shadows.e4,
   },
-  item: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: space.xs },
-  pill: {
-    position: "absolute",
-    top: space.xs,
-    width: 46,
-    height: 46,
-    borderRadius: radius.lg,
+  clip: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radius.pill,
     overflow: "hidden",
   },
-  iconWrap: { width: 46, height: 46, justifyContent: "center", alignItems: "center" },
+  reflection: {
+    position: "absolute",
+    top: 3,
+    left: 14,
+    right: 14,
+    height: 12,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.65)",
+  },
+  seam: {
+    position: "absolute",
+    top: 10,
+    bottom: 10,
+    width: 1,
+    backgroundColor: "rgba(108,123,116,0.25)",
+  },
+  row: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  item: { flex: 1, alignItems: "center", justifyContent: "center", height: "100%" },
+  iconWrap: { width: 46, height: 30, justifyContent: "center", alignItems: "center" },
   badge: {
     position: "absolute",
-    top: 2,
-    right: 4,
+    top: -4,
+    right: 2,
     minWidth: 18,
     height: 18,
     paddingHorizontal: 4,
@@ -116,7 +241,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: colors.bg.surface,
+    borderColor: colors.palette.white,
+    zIndex: 2,
+  },
+  // Valve knob slides on this absolute layer; sits raised above the pipe top so it
+  // floats clear of the tab label sitting at the bottom of the bar.
+  knob: {
+    position: "absolute",
+    top: (BAR_HEIGHT - KNOB) / 2 - 20,
+    left: 0,
+    width: KNOB,
+    height: KNOB,
+  },
+  knobBezel: {
+    width: KNOB,
+    height: KNOB,
+    borderRadius: KNOB / 2,
+    padding: 3,
+    backgroundColor: colors.palette.white,
+    ...shadows.brand,
+  },
+  knobFill: {
+    flex: 1,
+    borderRadius: KNOB / 2,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  knobShine: {
+    position: "absolute",
+    top: 6,
+    left: 10,
+    width: 20,
+    height: 9,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.45)",
   },
 });
 

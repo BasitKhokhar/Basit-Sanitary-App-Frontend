@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Icon from "@expo/vector-icons/MaterialIcons";
 import DateTimeDisplay from "./DateTimeDisplay";
-import Constants from 'expo-constants';
-import { apiFetch } from "../../src/apiFetch";
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
-
-const { height: screenHeight } = Dimensions.get("window"); 
+import { apiFetch } from "../../apiFetch";
+import AppText from "../../components/ui/Text";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
 
 const UserNameDisplay = () => {
   const [userName, setUserName] = useState("");
@@ -27,7 +27,7 @@ const UserNameDisplay = () => {
           setUserImage(imageData.image_url);
         }
       } catch (error) {
-        console.error("❌ Error fetching user:", error);
+        if (__DEV__) console.error("❌ Error fetching user:", error);
       }
     };
 
@@ -36,34 +36,42 @@ const UserNameDisplay = () => {
 
   return (
     <LinearGradient
-      colors={["#1A1A1A", "#1A1A1A", "#1A1A1A"]}
-      start={{ x: 0, y: 1 }}
-      end={{ x: 0, y: 0.4 }}
-      style={[styles.container, { height: screenHeight * 0.30 }]} // ~37% of screen height
+      colors={colors.gradients.dark}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
     >
       <View style={styles.header}>
-        <Text style={styles.text}>
-          {userName ? `Welcome, ${userName}!` : "Loading..."}
-        </Text>
-        <View style={styles.imageContainer}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="caption" style={styles.eyebrow}>
+            {userName ? "Welcome back" : "Welcome"}
+          </AppText>
+          <AppText variant="h1" style={styles.name} numberOfLines={1}>
+            {userName ? `${userName} 👋` : "Loading…"}
+          </AppText>
+        </View>
+
+        <View style={styles.avatarRing}>
           {userImage ? (
             <Image source={{ uri: userImage }} style={styles.profileImage} />
           ) : (
-            <View style={styles.defaultProfileCircle} />
+            <View style={styles.avatarFallback}>
+              <Icon name="person" size={24} color={colors.text.onPrimary} />
+            </View>
           )}
         </View>
       </View>
 
-      <Text style={styles.text1}>
+      <AppText variant="body" style={styles.subtitle}>
         Explore a wide range of sanitary products and expert plumbing services.
-      </Text>
+      </AppText>
 
-      <View style={styles.dateTimeWrapper}>
-        <View style={styles.dateTimeInner}>
+      <View style={styles.dateChip}>
+        <Icon name="schedule" size={14} color={colors.brand.primaryLight} />
+        <View style={styles.dateChipInner}>
           <DateTimeDisplay />
         </View>
       </View>
-
     </LinearGradient>
   );
 };
@@ -71,37 +79,56 @@ const UserNameDisplay = () => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    paddingTop: 20,
-    paddingHorizontal: 0,
-    paddingBottom: 15,
-    borderBottomRightRadius: 70,
-    justifyContent: "space-between", 
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space["2xl"],
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
   },
-  text: { fontSize: 24, fontWeight: "bold", color: "white" },
-  text1: {
-    fontSize: 18,
-    color: "#E0E0E0",
-    marginHorizontal: 20,
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "white",
+  header: { flexDirection: "row", alignItems: "center" },
+  eyebrow: {
+    color: colors.brand.primaryLight,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    fontWeight: "700",
   },
-  header: {
+  name: { color: colors.text.onPrimary, marginTop: 2 },
+  subtitle: {
+    color: "rgba(255,255,255,0.72)",
+    marginTop: space.md,
+    lineHeight: 22,
+  },
+  avatarRing: {
+    width: 54,
+    height: 54,
+    borderRadius: radius.pill,
+    padding: 2,
+    borderWidth: 2,
+    borderColor: "rgba(63,182,131,0.55)",
+    overflow: "hidden",
+  },
+  profileImage: { width: "100%", height: "100%", borderRadius: radius.pill },
+  avatarFallback: {
     width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
+    height: "100%",
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
   },
-  imageContainer: { width: 50, height: 50, borderRadius: 50, overflow: "hidden" },
-  profileImage: { width: "100%", height: "100%", borderRadius: 50, },
-  // defaultProfileCircle: { width: 50, height: 50, borderRadius: 50, borderWidth: 2, borderColor: "white", backgroundColor: "#fff" },
-  dateTimeWrapper: {
-
-    alignSelf: "center",
-    marginBottom: 45,
+  dateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: space.lg,
+    paddingVertical: space.xs,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
+  dateChipInner: { marginLeft: space.xs },
 });
 
 export default UserNameDisplay;

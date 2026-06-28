@@ -1,6 +1,13 @@
 // ProductCard — canonical image-first luxury card.
 // Replaces the duplicated card markup in ProductsScreen, OnSaleProducts,
 // TrendingProducts, Completesets. Memoized for smooth list scrolling.
+//
+// variant:
+//   "standard" (default) — image on top, info panel below. Used in grids /
+//                          Trending / On Sale rails.
+//   "showcase"           — taller full-bleed image with the name + price
+//                          overlaid on a gradient. Used for curated
+//                          collections (Complete Sets) for a richer look.
 
 import React from "react";
 import { View, Image, StyleSheet } from "react-native";
@@ -17,9 +24,12 @@ import { space } from "../../theme/spacing";
 import { radius } from "../../theme/radius";
 import { shadows } from "../../theme/shadows";
 
+const fmt = (n, currency = "Rs") => `${currency} ${Number(n || 0).toLocaleString()}`;
+
 const ProductCard = ({
   product,
   width = 170,
+  variant = "standard",
   onPress,
   onAddToCart,
   wishlisted = false,
@@ -41,8 +51,71 @@ const ProductCard = ({
 
   const originalPrice = original_price ?? old_price;
   const outOfStock = stock != null && Number(stock) <= 0;
-  const imgSize = width;
 
+  // ----- Showcase variant -------------------------------------------------
+  if (variant === "showcase") {
+    const height = Math.round(width * 1.18);
+    return (
+      <PressableScale
+        onPress={() => onPress?.(product)}
+        style={[styles.showcaseCard, { width, height }, style]}
+        accessibilityLabel={name}
+      >
+        <Image source={{ uri: image_url }} style={styles.image} resizeMode="cover" />
+        <LinearGradient
+          colors={["transparent", "rgba(12,26,20,0.15)", "rgba(7,53,31,0.92)"]}
+          locations={[0.35, 0.6, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+
+        {/* Top row: sale badge + wishlist */}
+        <View style={styles.topRow}>
+          {on_sale || originalPrice ? <Badge label="SALE" tone="error" size="sm" /> : <View />}
+          <HeartButton active={wishlisted} onToggle={() => onToggleWishlist?.(product)} size={18} />
+        </View>
+
+        {outOfStock ? (
+          <View style={styles.showcaseSoldOut}>
+            <Badge label="Out of stock" tone="neutral" />
+          </View>
+        ) : null}
+
+        {/* Bottom overlay info */}
+        <View style={styles.showcaseInfo}>
+          <AppText variant="bodyLg" color="onPrimary" weight="700" numberOfLines={2}>
+            {name}
+          </AppText>
+          <View style={styles.showcasePriceRow}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="h3" color="onPrimary" weight="800">
+                {fmt(Math.floor(price || 0), currency)}
+              </AppText>
+              {originalPrice ? (
+                <AppText
+                  variant="caption"
+                  style={{ color: "rgba(255,255,255,0.7)", textDecorationLine: "line-through" }}
+                >
+                  {fmt(Math.floor(originalPrice), currency)}
+                </AppText>
+              ) : null}
+            </View>
+            <PressableScale
+              onPress={() => !outOfStock && onAddToCart?.(product)}
+              disabled={outOfStock}
+              style={[styles.showcaseAddBtn, outOfStock && { opacity: 0.4 }]}
+              accessibilityLabel={`Add ${name} to cart`}
+            >
+              <Icon name="add-shopping-cart" size={20} color={colors.brand.primary} />
+            </PressableScale>
+          </View>
+        </View>
+      </PressableScale>
+    );
+  }
+
+  // ----- Standard variant -------------------------------------------------
+  const imgSize = width;
   return (
     <PressableScale onPress={() => onPress?.(product)} style={[styles.card, { width }, style]} accessibilityLabel={name}>
       {/* Image area */}
@@ -102,7 +175,9 @@ const ProductCard = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bg.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
     overflow: "hidden",
     ...shadows.e2,
   },
@@ -131,6 +206,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...shadows.brand,
+  },
+
+  // Showcase variant
+  showcaseCard: {
+    backgroundColor: colors.bg.sunken,
+    borderRadius: radius.xl,
+    overflow: "hidden",
+    ...shadows.e3,
+  },
+  showcaseSoldOut: { position: "absolute", top: 44, left: space.sm },
+  showcaseInfo: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: space.lg,
+  },
+  showcasePriceRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: space.sm,
+  },
+  showcaseAddBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.e2,
   },
 });
 

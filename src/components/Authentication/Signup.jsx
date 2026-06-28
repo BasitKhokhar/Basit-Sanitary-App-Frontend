@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   View,
@@ -8,25 +7,36 @@ import {
   StyleSheet,
   ImageBackground,
   KeyboardAvoidingView,
-  Platform,ActivityIndicator
+  Platform,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Icon from "@expo/vector-icons/FontAwesome";
-import Constants from 'expo-constants';
-import { MotiView, AnimatePresence } from "moti";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../Themes/colors";
-import bgImage from "../../assets/splash1.jpg";
-import { apiFetch } from "../../src/apiFetch";
+import Constants from "expo-constants";
+import { MotiView, AnimatePresence } from "moti";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { colors } from "../../theme/colors";
+import { typography } from "../../theme/typography";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
+import bgImage from "../../../assets/splash1.jpg";
+import { apiFetch } from "../../apiFetch";
+
+const { palette } = colors;
 const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
 
 const SignupScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [focused, setFocused] = useState(null);
 
   const [showLoader, setShowLoader] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -91,71 +101,138 @@ const SignupScreen = ({ navigation }) => {
     }
   };
 
+  const isError =
+    toastMessage.toLowerCase().includes("fail") ||
+    toastMessage.toLowerCase().includes("error") ||
+    toastMessage.toLowerCase().includes("required") ||
+    toastMessage.toLowerCase().includes("invalid") ||
+    toastMessage.toLowerCase().includes("must");
+
   return (
-    <ImageBackground source={bgImage} style={styles.backgroundImage}>
+    <ImageBackground source={bgImage} style={styles.bg}>
+      <LinearGradient
+        colors={["rgba(7,53,31,0.55)", "rgba(12,26,20,0.88)", palette.ink]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Sign Up</Text>
-
-          <TextInput
-            placeholder="Name"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-            placeholderTextColor={colors.mutedText}
-          />
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            placeholderTextColor={colors.mutedText}
-          />
-
-          <View style={styles.passwordWrapper}>
-            <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              style={[styles.input, styles.passwordInput]}
-              placeholderTextColor={colors.mutedText}
-              secureTextEntry={!passwordVisible}
-            />
-            <TouchableOpacity
-              onPress={() => setPasswordVisible(!passwordVisible)}
-              style={styles.eyeIcon}
-            >
-              <Icon
-                name={passwordVisible ? "eye-slash" : "eye"}
-                size={20}
-                color={colors.secondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <TextInput
-            placeholder="Phone"
-            value={phone}
-            onChangeText={setPhone}
-            style={styles.input}
-            keyboardType="phone-pad"
-            placeholderTextColor={colors.mutedText}
-          />
-
-          <TouchableOpacity style={styles.buttonWrapper} onPress={handleSignup}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingTop: insets.top + space["2xl"], paddingBottom: Math.max(insets.bottom, space.lg) + space["2xl"] },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <MotiView
+            from={{ opacity: 0, translateY: 16 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 500 }}
+            style={styles.brand}
+          >
             <LinearGradient
-              colors={colors.gradients.mintGlow}
+              colors={colors.gradients.emeraldGlow}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.button}
+              style={styles.brandBadge}
             >
-              <Text style={styles.buttonText}>Sign Up</Text>
+              <Ionicons name="water" size={28} color={palette.white} />
             </LinearGradient>
-          </TouchableOpacity>
+            <Text style={styles.eyebrow}>JOIN US</Text>
+          </MotiView>
+
+          <MotiView
+            from={{ opacity: 0, translateY: 28 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "spring", damping: 16, stiffness: 160, delay: 120 }}
+            style={styles.card}
+          >
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Sign up to start shopping premium sanitary</Text>
+
+            <View style={[styles.field, focused === "name" && styles.fieldFocused]}>
+              <Ionicons name="person-outline" size={18} color={palette.emerald200} style={styles.fieldIcon} />
+              <TextInput
+                placeholder="Full name"
+                value={name}
+                onChangeText={setName}
+                onFocus={() => setFocused("name")}
+                onBlur={() => setFocused(null)}
+                style={styles.input}
+                placeholderTextColor={palette.slate500}
+              />
+            </View>
+
+            <View style={[styles.field, focused === "email" && styles.fieldFocused]}>
+              <Ionicons name="mail-outline" size={18} color={palette.emerald200} style={styles.fieldIcon} />
+              <TextInput
+                placeholder="Email address"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocused("email")}
+                onBlur={() => setFocused(null)}
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor={palette.slate500}
+              />
+            </View>
+
+            <View style={[styles.field, focused === "password" && styles.fieldFocused]}>
+              <Ionicons name="lock-closed-outline" size={18} color={palette.emerald200} style={styles.fieldIcon} />
+              <TextInput
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocused("password")}
+                onBlur={() => setFocused(null)}
+                style={styles.input}
+                placeholderTextColor={palette.slate500}
+                secureTextEntry={!passwordVisible}
+              />
+              <TouchableOpacity
+                onPress={() => setPasswordVisible(!passwordVisible)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={passwordVisible ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={palette.slate300}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.field, focused === "phone" && styles.fieldFocused]}>
+              <Ionicons name="call-outline" size={18} color={palette.emerald200} style={styles.fieldIcon} />
+              <TextInput
+                placeholder="Phone (11 digits)"
+                value={phone}
+                onChangeText={setPhone}
+                onFocus={() => setFocused("phone")}
+                onBlur={() => setFocused(null)}
+                style={styles.input}
+                keyboardType="phone-pad"
+                placeholderTextColor={palette.slate500}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.ctaWrapper} onPress={handleSignup} activeOpacity={0.9}>
+              <LinearGradient
+                colors={colors.gradients.emeraldGlow}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cta}
+              >
+                <Text style={styles.ctaText}>Create Account</Text>
+                <Ionicons name="arrow-forward" size={18} color={palette.white} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </MotiView>
 
           <View style={styles.signupRow}>
             <Text style={styles.normalText}>Already have an account?</Text>
@@ -163,7 +240,7 @@ const SignupScreen = ({ navigation }) => {
               <Text style={styles.link}> Login</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* 🔄 Loader Modal */}
@@ -175,9 +252,9 @@ const SignupScreen = ({ navigation }) => {
             exit={{ opacity: 0 }}
             style={styles.overlay}
           >
-            <View style={[styles.loaderBox, { backgroundColor: colors.cardsbackground }]}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loaderText}>Please wait...</Text>
+            <View style={styles.loaderBox}>
+              <ActivityIndicator size="large" color={palette.emerald400} />
+              <Text style={styles.loaderText}>Please wait…</Text>
             </View>
           </MotiView>
         )}
@@ -192,20 +269,20 @@ const SignupScreen = ({ navigation }) => {
             exit={{ opacity: 0, scale: 0.8 }}
             style={styles.overlay}
           >
-            <View style={[styles.toastBox, { backgroundColor: colors.cardsbackground }]}>
-              <View style={[styles.iconWrapper, { backgroundColor: "rgba(6,182,212,0.15)" }]}>
+            <View style={styles.toastBox}>
+              <View
+                style={[
+                  styles.iconWrapper,
+                  { backgroundColor: isError ? "rgba(224,65,58,0.15)" : "rgba(63,182,131,0.15)" },
+                ]}
+              >
                 <Ionicons
-                  name={
-                    toastMessage.toLowerCase().includes("fail") ||
-                    toastMessage.toLowerCase().includes("error")
-                      ? "close-circle"
-                      : "checkmark-circle"
-                  }
-                  size={60}
-                  color={colors.primary}
+                  name={isError ? "close-circle" : "checkmark-circle"}
+                  size={56}
+                  color={isError ? palette.red : palette.emerald400}
                 />
               </View>
-              <Text style={styles.toastTitle}>Notice</Text>
+              <Text style={styles.toastTitle}>{isError ? "Oops" : "Success"}</Text>
               <Text style={styles.toastMessage}>{toastMessage}</Text>
             </View>
           </MotiView>
@@ -216,68 +293,159 @@ const SignupScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, resizeMode: "cover", justifyContent: "center" },
-  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  formContainer: {
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 25,
-    borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-    width: "100%",
-    maxWidth: 400,
+  bg: { flex: 1, backgroundColor: palette.ink },
+  flex: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: space.xl,
   },
-  title: { fontSize: 26, fontWeight: "bold", color: colors.secondary, marginBottom: 20, textAlign: "center" },
-  input: {
+  brand: {
+    alignItems: "center",
+    marginBottom: space.xl,
+  },
+  brandBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: space.md,
+    ...shadows.brand,
+  },
+  eyebrow: {
+    ...typography.label,
+    color: palette.gold,
+    letterSpacing: 2.4,
+  },
+  card: {
+    backgroundColor: "rgba(22,38,30,0.72)",
+    borderRadius: radius.xl,
+    padding: space["2xl"],
     borderWidth: 1,
-    borderColor: colors.border || "#555",
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    color: colors.secondary,
+    borderColor: "rgba(155,217,191,0.16)",
+    ...shadows.e4,
   },
-  passwordWrapper: { position: "relative" },
-  passwordInput: { paddingRight: 45 },
-  eyeIcon: { position: "absolute", right: 12, top: 20 },
-  buttonWrapper: { marginTop: 10, borderRadius: 40, elevation: 6 },
-  button: { paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  buttonText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
-  signupRow: { flexDirection: "row", justifyContent: "center", marginTop: 15 },
-  normalText: { color: colors.mutedText, fontSize: 14 },
-  link: { color: colors.primary, fontWeight: "bold", fontSize: 15 },
+  title: {
+    ...typography.h1,
+    color: palette.white,
+    textAlign: "center",
+  },
+  subtitle: {
+    ...typography.body,
+    color: palette.slate300,
+    textAlign: "center",
+    marginTop: space.xs,
+    marginBottom: space.lg,
+  },
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.10)",
+    paddingHorizontal: space.md,
+    height: 54,
+    marginTop: space.md,
+  },
+  fieldFocused: {
+    borderColor: palette.emerald400,
+    backgroundColor: "rgba(63,182,131,0.10)",
+  },
+  fieldIcon: { marginRight: space.sm },
+  input: {
+    flex: 1,
+    ...typography.bodyLg,
+    color: palette.white,
+    paddingVertical: 0,
+  },
+  ctaWrapper: {
+    marginTop: space.xl,
+    borderRadius: radius.pill,
+    ...shadows.brand,
+  },
+  cta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.sm,
+    paddingVertical: space.lg,
+    borderRadius: radius.pill,
+  },
+  ctaText: {
+    ...typography.h3,
+    color: palette.white,
+    letterSpacing: 0.4,
+  },
+  signupRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: space["2xl"],
+  },
+  normalText: {
+    ...typography.body,
+    color: palette.slate300,
+  },
+  link: {
+    ...typography.body,
+    fontWeight: "700",
+    color: palette.emerald400,
+  },
   overlay: {
     position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
   },
   loaderBox: {
-    width: 140,
-    height: 140,
-    borderRadius: 20,
+    width: 150,
+    height: 150,
+    borderRadius: radius.xl,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    backgroundColor: colors.bg.surface,
+    ...shadows.e4,
   },
-  loaderText: { color: colors.text, marginTop: 10 },
+  loaderText: {
+    ...typography.body,
+    color: colors.text.secondary,
+    marginTop: space.md,
+  },
   toastBox: {
-    width: "75%",
-    borderRadius: 18,
+    width: "78%",
+    maxWidth: 320,
+    borderRadius: radius.xl,
     alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    paddingVertical: space["2xl"],
+    paddingHorizontal: space.lg,
+    backgroundColor: colors.bg.surface,
+    ...shadows.e4,
   },
-  iconWrapper: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  toastTitle: { color: colors.text, fontSize: 20, fontWeight: "700", marginBottom: 6 },
-  toastMessage: { color: colors.mutedText, fontSize: 14, textAlign: "center", lineHeight: 20 },
+  iconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: space.md,
+  },
+  toastTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    marginBottom: space.xs,
+  },
+  toastMessage: {
+    ...typography.body,
+    color: colors.text.muted,
+    textAlign: "center",
+  },
 });
 
 export default SignupScreen;

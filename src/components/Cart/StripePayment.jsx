@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
-import { apiFetch } from "../../src/apiFetch";
+import { apiFetch } from "../../apiFetch";
 import { colors } from "../Themes/colors";
 
 const StripePayment = ({ route }) => {

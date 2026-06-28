@@ -5,12 +5,12 @@
 import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
-import Card from "../../src/components/ui/Card";
-import AppText from "../../src/components/ui/Text";
-import Badge from "../../src/components/ui/Badge";
-import { colors } from "../../src/theme/colors";
-import { space } from "../../src/theme/spacing";
-import { radius } from "../../src/theme/radius";
+import Card from "../../components/ui/Card";
+import AppText from "../../components/ui/Text";
+import Badge from "../../components/ui/Badge";
+import { colors } from "../../theme/colors";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
 
 const STEPS = ["pending", "processing", "shipped", "delivered"];
 const LABELS = { pending: "Placed", processing: "Processing", shipped: "Shipped", delivered: "Delivered" };
