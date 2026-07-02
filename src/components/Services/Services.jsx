@@ -95,9 +95,10 @@ const Services = () => {
 
   const Hero = (
     <LinearGradient
-      colors={colors.gradients.emeraldDeep}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      colors={[colors.palette.ink, colors.palette.emerald900, colors.palette.emerald800]}
+      locations={[0, 0.5, 1]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
       style={styles.hero}
     >
       <View style={styles.heroRow}>

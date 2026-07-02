@@ -9,6 +9,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as SecureStore from "expo-secure-store";
+import * as Updates from "expo-updates";
 
 // Screens
 import SignupScreen from "./src/components/Authentication/Signup";
@@ -103,14 +104,19 @@ const MainLayout = ({ navigation, children, currentScreen }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg.inverse }]}>
-      {/* Premium dark header — white logo reads clearly on the dark surface */}
+      {/* Premium dark header — white logo reads clearly on the dark surface.
+          Vertical gradient ending in pure `ink` so the bottom edge matches the
+          top of any screen's hero gradient (Services, etc.) seamlessly. */}
       <LinearGradient
-        colors={colors.gradients.dark}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={[colors.palette.ink2, colors.palette.ink]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={styles.header}
       >
-        <Image source={require("./assets/logo.png")} style={styles.logo} resizeMode="contain" />
+        <View style ={{ width: 90, height: 50, paddingHorizontal: 5, borderRadius: theme.radius.md,}}>
+<Image source={require("./assets/logo.png")} style={styles.logo} resizeMode="contain" />
+        </View>
+        
 
         {/* <PressableScale
           style={styles.searchBar}
@@ -200,6 +206,24 @@ const App = () => {
   const [isSplash3Visible, setIsSplash3Visible] = useState(null);
   const [isSplash4Visible, setIsSplash4Visible] = useState(null);
   const [isSplash5Visible, setIsSplash5Visible] = useState(null);
+
+  // OTA updates: fetch and apply while the splash screen is showing, so a
+  // published `eas update` lands on this launch instead of the next one.
+  useEffect(() => {
+    const applyOtaUpdate = async () => {
+      if (__DEV__ || !Updates.isEnabled) return;
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Offline or update server unreachable — keep the installed bundle.
+      }
+    };
+    applyOtaUpdate();
+  }, []);
 
   // ✅ Check for valid token only
   useEffect(() => {
@@ -376,7 +400,7 @@ const styles = StyleSheet.create({
     gap: theme.space.sm,
     backgroundColor: colors.bg.inverse,
   },
-  logo: { width: 80, height: 50, borderRadius: theme.radius.md },
+  logo: { width: "100% ", height: "100%",  },
   searchBar: {
     flex: 1,
     flexDirection: "row",

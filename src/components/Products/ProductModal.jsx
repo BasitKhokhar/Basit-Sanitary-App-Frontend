@@ -309,7 +309,7 @@ const ProductModal = ({ product, onClose, userId }) => {
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(12,26,20,0.55)" },
   sheet: {
-    height: height * 0.9,
+    height: height * 0.99,
     backgroundColor: colors.bg.canvas,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,

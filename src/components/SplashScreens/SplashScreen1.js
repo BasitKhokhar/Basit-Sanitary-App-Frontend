@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   logoCard: {
     width: LOGO_BOX,
     height: LOGO_BOX,
-    borderRadius: radius.xl,
+    borderRadius: LOGO_BOX / 2,
     backgroundColor: palette.white,
     alignItems: "center",
     justifyContent: "center",

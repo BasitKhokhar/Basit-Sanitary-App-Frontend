@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -16,7 +16,6 @@ import { apiFetch } from "../../apiFetch";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 
-import { CartContext } from "../../ContextApis/cartContext";
 import { useWishlist } from "../../ContextApis/WishlistContext";
 import AppText from "../../components/ui/Text";
 import Button from "../../components/ui/Button";
@@ -29,7 +28,6 @@ import { shadows } from "../../theme/shadows";
 
 const UserScreen = () => {
   const navigation = useNavigation();
-  const { cartCount } = useContext(CartContext);
   const { count: wishlistCount } = useWishlist();
 
   const [userData, setUserData] = useState(null);
@@ -91,17 +89,17 @@ const UserScreen = () => {
   const quickStats = [
     { label: "Orders", icon: "receipt-long", onPress: () => navigation.navigate("Orders") },
     { label: "Wishlist", icon: "favorite", value: wishlistCount, onPress: () => navigation.navigate("Wishlist") },
-    { label: "Cart", icon: "shopping-bag", value: cartCount, onPress: () => navigation.navigate("Main") },
   ];
 
   // Orders / Wishlist / Cart are already surfaced as quick-stat cards above,
   // so they're intentionally omitted from this list to avoid duplication.
   const menu = [
     { label: "Account Detail", icon: "person-outline", onPress: () => navigation.navigate("AccountDetail", { userData }) },
+    { label: "About Us", icon: "info-outline", onPress: () => navigation.navigate("about") },
     { label: "Customer Support", icon: "support-agent", onPress: () => navigation.navigate("CustomerSupport") },
     { label: "FAQs", icon: "help-outline", onPress: () => navigation.navigate("faq") },
-    { label: "About App", icon: "info-outline", onPress: () => handleOpenPdf(1) },
-    { label: "Privacy Policy", icon: "security", onPress: () => handleOpenPdf(2) },
+    
+    // { label: "Privacy Policy", icon: "security", onPress: () => handleOpenPdf(2) },
   ];
 
   return (
@@ -173,6 +171,10 @@ const UserScreen = () => {
           ))}
         </Card>
 
+        <View style={styles.socials}>
+          <SocialIconsRow />
+        </View>
+
         <Button
           title="Logout"
           variant="ghost"
@@ -180,10 +182,6 @@ const UserScreen = () => {
           onPress={() => setShowLogoutModal(true)}
           style={{ marginTop: space.xl, borderColor: colors.status.error }}
         />
-
-        <View style={styles.socials}>
-          <SocialIconsRow />
-        </View>
       </ScrollView>
 
       {/* Logout modal */}
@@ -235,7 +233,7 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: radius.md, backgroundColor: colors.bg.sunken,
     justifyContent: "center", alignItems: "center", marginRight: space.md,
   },
-  socials: { marginTop: space.xl, alignItems: "center" },
+  socials: { marginTop: space.xl },
   loaderOverlay: {
     position: "absolute", width: "100%", height: "100%",
     backgroundColor: "rgba(12,26,20,0.5)", zIndex: 999, justifyContent: "center", alignItems: "center",

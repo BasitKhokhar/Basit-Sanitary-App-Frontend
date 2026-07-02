@@ -1,10 +1,9 @@
 // Categories — premium horizontal rail of circular category tiles.
-// Round image avatars with an emerald ring + soft shadow, name below.
+// Round image avatars (no ring) with a soft shadow, name below.
 // Gives a cleaner, more premium "shop by category" feel.
 
 import React, { useState, useCallback } from "react";
 import { View, FlatList, Image, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import PressableScale from "../ui/PressableScale";
@@ -14,35 +13,26 @@ import { space } from "../../theme/spacing";
 import { shadows } from "../../theme/shadows";
 
 const CIRCLE = 84;
-const RING = 3;
 
 const CategoryTile = ({ item, onPress }) => {
   const [failed, setFailed] = useState(false);
 
   return (
     <PressableScale style={styles.tile} onPress={onPress} accessibilityLabel={item.name}>
-      {/* Emerald gradient ring around the avatar */}
-      <LinearGradient
-        colors={colors.gradients.emeraldGlow}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.ring}
-      >
-        <View style={styles.avatarWrap}>
-          {!failed && item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.image}
-              resizeMode="cover"
-              onError={() => setFailed(true)}
-            />
-          ) : (
-            <View style={[styles.image, styles.fallback]}>
-              <Icon name="category" size={28} color={colors.brand.primary} />
-            </View>
-          )}
-        </View>
-      </LinearGradient>
+      <View style={styles.avatarWrap}>
+        {!failed && item.image_url ? (
+          <Image
+            source={{ uri: item.image_url }}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <View style={[styles.image, styles.fallback]}>
+            <Icon name="category" size={28} color={colors.brand.primary} />
+          </View>
+        )}
+      </View>
 
       <AppText
         variant="label"
@@ -107,21 +97,13 @@ const styles = StyleSheet.create({
     width: CIRCLE + 12,
     alignItems: "center",
   },
-  ring: {
+  avatarWrap: {
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: CIRCLE / 2,
-    padding: RING,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadows.e3,
-  },
-  avatarWrap: {
-    width: CIRCLE - RING * 2,
-    height: CIRCLE - RING * 2,
-    borderRadius: (CIRCLE - RING * 2) / 2,
     overflow: "hidden",
     backgroundColor: colors.bg.surface,
+    ...shadows.e3,
   },
   image: { width: "100%", height: "100%" },
   fallback: { justifyContent: "center", alignItems: "center", backgroundColor: colors.brand.tint },

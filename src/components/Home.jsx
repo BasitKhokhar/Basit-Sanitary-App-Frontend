@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProductModal from "./Products/ProductModal";
@@ -63,7 +63,7 @@ const HomeScreen = () => {
           }
         })
       );
-      console.log("Fetched home data:", responses.onSaleProducts);
+      // console.log("Fetched home data:", responses.onSaleProducts);
       setHomeData(responses.reduce((acc, { key, data }) => ((acc[key] = data), acc), {}));
     } catch (error) {
       if (__DEV__) console.error("Home data fetch error:", error);
@@ -91,15 +91,20 @@ const HomeScreen = () => {
 
   // Tapping a card or its cart icon opens the product/cart modal first
   // (where the user picks a finish and confirms) — consistent across the app.
-  const openCartModal = (product) => setSelectedProduct(product);
+  const openCartModal = useCallback((product) => setSelectedProduct(product), []);
 
-  const carouselProps = {
-    onPressItem: openCartModal,
-    onAddToCart: openCartModal,
-    isWishlisted,
-    onToggleWishlist: toggleWishlist,
-    onSeeAll: () => navigation.navigate("Products"),
-  };
+  // Stable props object so memoized ProductCarousels don't re-render on every
+  // Home render (only when the wishlist state or handlers actually change).
+  const carouselProps = useMemo(
+    () => ({
+      onPressItem: openCartModal,
+      onAddToCart: openCartModal,
+      isWishlisted,
+      onToggleWishlist: toggleWishlist,
+      onSeeAll: () => navigation.navigate("Products"),
+    }),
+    [openCartModal, isWishlisted, toggleWishlist, navigation]
+  );
 
   if (loading) {
     return (

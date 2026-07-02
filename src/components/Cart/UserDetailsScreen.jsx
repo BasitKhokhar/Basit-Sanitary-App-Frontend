@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,6 +28,15 @@ import { space } from "../../theme/spacing";
 import { radius } from "../../theme/radius";
 import { shadows } from "../../theme/shadows";
 
+const SummaryRow = ({ label, value, strong, accent }) => (
+  <View style={styles.summaryRow}>
+    <AppText variant={strong ? "h3" : "body"} color={strong ? "primary" : "secondary"}>{label}</AppText>
+    <AppText variant={strong ? "h3" : "bodyLg"} weight={strong ? "800" : "700"} color={accent ? "brand" : "primary"}>
+      Rs {Number(value || 0).toLocaleString()}
+    </AppText>
+  </View>
+);
+
 const UserDetailsScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -54,7 +63,12 @@ const UserDetailsScreen = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState("info"); // success | error | info
 
-  const setField = (key) => (text) => setForm((prev) => ({ ...prev, [key]: text }));
+  // Stable per-field handlers so the memoized InputFields don't re-render (and
+  // lose/bounce focus) on every keystroke in a sibling field.
+  const onChangeName = useCallback((text) => setForm((p) => ({ ...p, name: text })), []);
+  const onChangePhone = useCallback((text) => setForm((p) => ({ ...p, phone: text })), []);
+  const onChangeCity = useCallback((text) => setForm((p) => ({ ...p, city: text })), []);
+  const onChangeAddress = useCallback((text) => setForm((p) => ({ ...p, address: text })), []);
 
   const showModal = (message, type = "info") => {
     setModalMessage(message);
@@ -144,20 +158,15 @@ const UserDetailsScreen = () => {
     }
   };
 
-  const SummaryRow = ({ label, value, strong, accent }) => (
-    <View style={styles.summaryRow}>
-      <AppText variant={strong ? "h3" : "body"} color={strong ? "primary" : "secondary"}>{label}</AppText>
-      <AppText variant={strong ? "h3" : "bodyLg"} weight={strong ? "800" : "700"} color={accent ? "brand" : "primary"}>
-        Rs {Number(value || 0).toLocaleString()}
-      </AppText>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
+      {/* On Android (New Architecture) an active KeyboardAvoidingView makes the
+          focused TextInput bounce focus across fields; adjustResize already
+          handles the keyboard there, so only enable this on iOS. */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        enabled={Platform.OS === "ios"}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -194,7 +203,10 @@ const UserDetailsScreen = () => {
             icon="person-outline"
             placeholder="e.g. Ahmed Raza"
             value={form.name}
-            onChangeText={setField("name")}
+            onChangeText={onChangeName}
+            autoComplete="off"
+            importantForAutofill="no"
+            textContentType="none"
           />
           <InputField
             label="Phone number"
@@ -202,14 +214,20 @@ const UserDetailsScreen = () => {
             placeholder="03XX XXXXXXX"
             keyboardType="phone-pad"
             value={form.phone}
-            onChangeText={setField("phone")}
+            onChangeText={onChangePhone}
+            autoComplete="off"
+            importantForAutofill="no"
+            textContentType="none"
           />
           <InputField
             label="City"
             icon="location-city"
             placeholder="e.g. Lahore"
             value={form.city}
-            onChangeText={setField("city")}
+            onChangeText={onChangeCity}
+            autoComplete="off"
+            importantForAutofill="no"
+            textContentType="none"
           />
           <InputField
             label="Delivery address"
@@ -217,7 +235,10 @@ const UserDetailsScreen = () => {
             placeholder="House #, street, area"
             multiline
             value={form.address}
-            onChangeText={setField("address")}
+            onChangeText={onChangeAddress}
+            autoComplete="off"
+            importantForAutofill="no"
+            textContentType="none"
           />
 
           {/* Receipt upload */}

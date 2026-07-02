@@ -53,6 +53,10 @@ const AddressScreen = () => {
         placeholder="Name"
         value={name}
         onChangeText={setName}
+        autoCorrect={false}
+        autoComplete="off"
+        importantForAutofill="no"
+        textContentType="none"
       />
 
       <TextInput
@@ -61,6 +65,10 @@ const AddressScreen = () => {
         keyboardType="phone-pad"
         value={phone}
         onChangeText={setPhone}
+        autoCorrect={false}
+        autoComplete="off"
+        importantForAutofill="no"
+        textContentType="none"
       />
 
       <TextInput
@@ -68,6 +76,10 @@ const AddressScreen = () => {
         placeholder="City"
         value={city}
         onChangeText={setCity}
+        autoCorrect={false}
+        autoComplete="off"
+        importantForAutofill="no"
+        textContentType="none"
       />
 
       <TextInput
@@ -76,6 +88,10 @@ const AddressScreen = () => {
         value={address}
         onChangeText={setAddress}
         multiline
+        autoCorrect={false}
+        autoComplete="off"
+        importantForAutofill="no"
+        textContentType="none"
       />
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSaveAddress}>

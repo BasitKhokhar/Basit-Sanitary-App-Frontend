@@ -142,6 +142,7 @@ const LoginScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        enabled={Platform.OS === "ios"}
       >
         <ScrollView
           contentContainerStyle={[
@@ -199,6 +200,9 @@ const LoginScreen = ({ navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
               />
             </View>
             {emailError && <Text style={styles.errorText}>Please enter a valid email</Text>}
@@ -221,6 +225,11 @@ const LoginScreen = ({ navigation }) => {
                 onBlur={() => setFocused(null)}
                 style={styles.input}
                 secureTextEntry={!passwordVisible}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
               />
               <TouchableOpacity
                 onPress={() => setPasswordVisible(!passwordVisible)}

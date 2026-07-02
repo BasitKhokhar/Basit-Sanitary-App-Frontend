@@ -8,7 +8,7 @@
 //                          (Complete Sets).
 //   "deal"               — gold-accented premium offer cards (On Sale).
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import ProductCard from "./ProductCard";
@@ -49,6 +49,23 @@ const ProductCarousel = ({
     });
   }, [data]);
 
+  const keyExtractor = useCallback((item, i) => String(item?.id ?? `idx-${i}`), []);
+  const ItemSeparator = useCallback(() => <View style={{ width: space.md }} />, []);
+  const renderItem = useCallback(
+    ({ item }) => (
+      <ProductCard
+        product={item}
+        width={cardWidth}
+        variant={variant}
+        onPress={onPressItem}
+        onAddToCart={onAddToCart}
+        wishlisted={isWishlisted?.(item.id)}
+        onToggleWishlist={onToggleWishlist}
+      />
+    ),
+    [cardWidth, variant, onPressItem, onAddToCart, isWishlisted, onToggleWishlist]
+  );
+
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.header}>
@@ -80,21 +97,15 @@ const ProductCarousel = ({
         <FlatList
           horizontal
           data={items}
-          keyExtractor={(item, i) => String(item?.id ?? `idx-${i}`)}
+          keyExtractor={keyExtractor}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
-          renderItem={({ item }) => (
-            <ProductCard
-              product={item}
-              width={cardWidth}
-              variant={variant}
-              onPress={onPressItem}
-              onAddToCart={onAddToCart}
-              wishlisted={isWishlisted?.(item.id)}
-              onToggleWishlist={onToggleWishlist}
-            />
-          )}
+          ItemSeparatorComponent={ItemSeparator}
+          renderItem={renderItem}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
         />
       )}
     </View>

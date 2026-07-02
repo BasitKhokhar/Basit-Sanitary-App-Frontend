@@ -21,6 +21,13 @@ const InputField = ({
   error,
   multiline,
   style,
+  // Autofill suppression defaults — without these, Android (New Architecture)
+  // bounces focus across every field when one is tapped (all borders flash).
+  // Callers can still override per-field by passing these props explicitly.
+  autoComplete = "off",
+  importantForAutofill = "no",
+  textContentType = "none",
+  autoCorrect = false,
   ...rest
 }) => {
   const [focused, setFocused] = useState(false);
@@ -40,6 +47,11 @@ const InputField = ({
         </AppText>
       ) : null}
       <View
+        // Exclude the whole input subtree from Android autofill, not just the
+        // leaf TextInput. On New-Arch (Fabric), leaf-only "no" still lets the
+        // autofill framework cross-wire siblings (tapping one field focuses
+        // another + opens the wrong keyboard); excluding descendants stops it.
+        importantForAutofill="noExcludeDescendants"
         style={[
           styles.field,
           { borderColor, backgroundColor: colors.bg.surface },
@@ -59,6 +71,10 @@ const InputField = ({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           multiline={multiline}
+          autoComplete={autoComplete}
+          importantForAutofill={importantForAutofill}
+          textContentType={textContentType}
+          autoCorrect={autoCorrect}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[styles.input, { color: colors.text.primary }]}
@@ -82,6 +98,8 @@ const InputField = ({
   );
 };
 
+const MemoInputField = React.memo(InputField);
+
 const styles = StyleSheet.create({
   wrap: { marginBottom: space.lg },
   label: { marginBottom: space.xs },
@@ -104,4 +122,4 @@ const styles = StyleSheet.create({
   error: { marginTop: space.xs },
 });
 
-export default InputField;
+export default MemoInputField;

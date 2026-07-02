@@ -9,7 +9,8 @@ export const endpoints = {
   products: {
     all: (page = 1, limit = 10) => `/products/allproducts?page=${page}&limit=${limit}`,
     categories: "/products/categories",
-    search: (q) => `/products/search?query=${encodeURIComponent(q)}`,
+    search: (q, page = 1, limit = 10) =>
+      `/products/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`,
     reviews: (id) => `/products/${id}/reviews`, // NEEDS-BACKEND (GET list / POST create)
   },
   cart: {

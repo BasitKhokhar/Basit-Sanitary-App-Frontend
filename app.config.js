@@ -7,7 +7,7 @@ try {
 
 export default () => ({
   expo: {
-    name: "basitsanitary",
+    name: "Basit Sanitary App",
     slug: "basit-sanitary",
     owner: "basit5000",
     version: "1.0.0",
@@ -22,6 +22,18 @@ export default () => ({
     },
 
     scheme: "basitsanitaryapp",
+
+    // OTA updates (EAS Update). Must be an explicit string (not a policy)
+    // because android/ is committed; keep it in sync with
+    // EXPO_RUNTIME_VERSION in android/app/src/main/AndroidManifest.xml.
+    // Bump it whenever native code/deps change (new library, SDK upgrade),
+    // then make a new build.
+    runtimeVersion: "1.0.0",
+    updates: {
+      url: "https://u.expo.dev/8ef19e80-4e09-48c7-b4d6-961cecc4cf11",
+      checkAutomatically: "ON_LOAD",
+      fallbackToCacheTimeout: 0
+    },
 
     android: {
       package: "com.basitkhokhar.sanitaryapp",

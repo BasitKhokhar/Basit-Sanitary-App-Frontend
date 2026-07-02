@@ -119,6 +119,7 @@ const SignupScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        enabled={Platform.OS === "ios"}
       >
         <ScrollView
           contentContainerStyle={[
@@ -164,6 +165,10 @@ const SignupScreen = ({ navigation }) => {
                 onBlur={() => setFocused(null)}
                 style={styles.input}
                 placeholderTextColor={palette.slate500}
+                autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
               />
             </View>
 
@@ -179,6 +184,9 @@ const SignupScreen = ({ navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
                 placeholderTextColor={palette.slate500}
               />
             </View>
@@ -194,6 +202,11 @@ const SignupScreen = ({ navigation }) => {
                 style={styles.input}
                 placeholderTextColor={palette.slate500}
                 secureTextEntry={!passwordVisible}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
               />
               <TouchableOpacity
                 onPress={() => setPasswordVisible(!passwordVisible)}
@@ -218,6 +231,10 @@ const SignupScreen = ({ navigation }) => {
                 style={styles.input}
                 keyboardType="phone-pad"
                 placeholderTextColor={palette.slate500}
+                autoCorrect={false}
+                autoComplete="off"
+                importantForAutofill="no"
+                textContentType="none"
               />
             </View>
 

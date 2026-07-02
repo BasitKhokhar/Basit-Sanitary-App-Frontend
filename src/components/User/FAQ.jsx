@@ -1,17 +1,88 @@
-
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import Loader from "../Loader/Loader";
-import { useNavigation } from "@react-navigation/native";
-import Constants from "expo-constants";
-import { colors } from "../Themes/colors";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { MotiView } from "moti";
+import { Easing } from "react-native-reanimated";
 
+import Loader from "../Loader/Loader";
 import { apiFetch } from "../../apiFetch";
-const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+import { colors } from "../../theme/colors";
+import { typography } from "../../theme/typography";
+import { space } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { shadows } from "../../theme/shadows";
+
+const { palette } = colors;
+
+// ---------------------------------------------------------------------------
+// Single FAQ card — smoothly expands/collapses by animating its measured height.
+// ---------------------------------------------------------------------------
+const FAQItem = ({ faq, index, open, onToggle }) => {
+  const [contentHeight, setContentHeight] = useState(0);
+
+  return (
+    <MotiView
+      from={{ opacity: 0, translateY: 14 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: "timing", duration: 350, delay: index * 60 }}
+      style={[styles.card, open && styles.cardOpen]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onToggle}
+        style={styles.questionRow}
+      >
+        <View style={[styles.qBadge, open && styles.qBadgeOpen]}>
+          <Text style={[styles.qBadgeText, open && styles.qBadgeTextOpen]}>Q</Text>
+        </View>
+
+        <Text style={styles.question}>{faq.question}</Text>
+
+        <MotiView
+          animate={{ rotate: open ? "180deg" : "0deg" }}
+          transition={{ type: "timing", duration: 250 }}
+          style={styles.chevron}
+        >
+          <MaterialIcons
+            name="keyboard-arrow-down"
+            size={24}
+            color={open ? palette.emerald700 : colors.text.muted}
+          />
+        </MotiView>
+      </TouchableOpacity>
+
+      {/* Animated panel: height + opacity glide between 0 and the measured height */}
+      <MotiView
+        animate={{ height: open ? contentHeight : 0, opacity: open ? 1 : 0 }}
+        transition={{
+          height: { type: "timing", duration: 300, easing: Easing.out(Easing.cubic) },
+          opacity: { type: "timing", duration: open ? 320 : 160 },
+        }}
+        style={styles.panel}
+      >
+        {/* Absolutely positioned so it reports full height regardless of panel height */}
+        <View
+          style={styles.measure}
+          onLayout={(e) => setContentHeight(e.nativeEvent.layout.height)}
+        >
+          <View style={styles.answerWrap}>
+            <View style={styles.answerDivider} />
+            <Text style={styles.answer}>{faq.answer}</Text>
+          </View>
+        </View>
+      </MotiView>
+    </MotiView>
+  );
+};
 
 const FAQ = () => {
-  const navigation = useNavigation();
   const [faqs, setFaqs] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +92,6 @@ const FAQ = () => {
     fetchFAQs();
   }, []);
 
-  // Fetch FAQs from backend
   const fetchFAQs = async () => {
     try {
       const response = await apiFetch(`/content/faqs`);
@@ -46,124 +116,139 @@ const FAQ = () => {
 
   return (
     <ScrollView
-      style={{
-        flex: 1,
-        backgroundColor: colors.bodybackground,
-      }}
-      contentContainerStyle={{
-        flexGrow: 1,
-        padding: 20,
-      }}
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Loading State */}
+      {/* Hero header */}
+      <LinearGradient
+        colors={[palette.ink, palette.emerald900, palette.emerald800]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.hero}
+      >
+        <View style={styles.heroBadge}>
+          <MaterialIcons name="help-outline" size={24} color={palette.white} />
+        </View>
+        <Text style={styles.heroTitle}>Frequently Asked Questions</Text>
+        <Text style={styles.heroSubtitle}>
+          Everything you need to know, answered.
+        </Text>
+      </LinearGradient>
+
       {loading ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "80%",
-          }}
-        >
+        <View style={styles.centerBox}>
           <Loader />
         </View>
       ) : errorMsg ? (
-        /* No Data or Error Message */
-        <View
-          style={{
-            padding: 20,
-            backgroundColor: colors.cardsbackground,
-            borderRadius: 10,
-            alignItems: "center",
-            marginTop: 50,
-          }}
-        >
-          <Ionicons
-            name="information-circle-outline"
-            size={50}
-            color={colors.mutedText}
-            style={{ marginBottom: 15 }}
+        <View style={styles.errorCard}>
+          <MaterialIcons
+            name="info-outline"
+            size={46}
+            color={colors.text.muted}
+            style={{ marginBottom: space.md }}
           />
-          <Text
-            style={{
-              color: colors.mutedText,
-              fontSize: 16,
-              textAlign: "center",
-              lineHeight: 22,
-            }}
-          >
-            {errorMsg}
-          </Text>
+          <Text style={styles.errorText}>{errorMsg}</Text>
         </View>
       ) : (
-        /* FAQs List */
-        faqs.map((faq, index) => (
-          <View
-            key={faq.id}
-            style={{
-              marginBottom: 12,
-              borderRadius: 12,
-              overflow: "hidden",
-              backgroundColor: colors.headerbg,
-              elevation: 4,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => toggleExpand(index)}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: 15,
-                backgroundColor: colors.cardsbackground,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  color: colors.text,
-                  flex: 1,
-                  marginRight: 10,
-                }}
-              >
-                {faq.question}
-              </Text>
-
-              <Ionicons
-                name={
-                  expandedIndex === index
-                    ? "chevron-up-outline"
-                    : "chevron-down-outline"
-                }
-                size={22}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-
-            {expandedIndex === index && (
-              <View
-                style={{
-                  backgroundColor: colors.formbg,
-                  padding: 15,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: colors.white,
-                    lineHeight: 20,
-                  }}
-                >
-                  {faq.answer}
-                </Text>
-              </View>
-            )}
-          </View>
-        ))
+        <View style={styles.list}>
+          {faqs.map((faq, index) => (
+            <FAQItem
+              key={faq.id}
+              faq={faq}
+              index={index}
+              open={expandedIndex === index}
+              onToggle={() => toggleExpand(index)}
+            />
+          ))}
+        </View>
       )}
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg.canvas },
+  content: { paddingBottom: space["5xl"] },
+
+  // Hero
+  hero: {
+    paddingTop: space["3xl"],
+    paddingBottom: space["3xl"],
+    paddingHorizontal: space.xl,
+    alignItems: "center",
+    borderBottomLeftRadius: radius["2xl"],
+    borderBottomRightRadius: radius["2xl"],
+  },
+  heroBadge: {
+    width: 56, height: 56, borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
+    alignItems: "center", justifyContent: "center", marginBottom: space.md,
+  },
+  heroTitle: {
+    ...typography.h2, color: palette.white, textAlign: "center", letterSpacing: 0.3,
+  },
+  heroSubtitle: {
+    ...typography.body, color: palette.emerald100, opacity: 0.85,
+    textAlign: "center", marginTop: space.xs,
+  },
+
+  // States
+  centerBox: { paddingVertical: space["6xl"], alignItems: "center", justifyContent: "center" },
+  errorCard: {
+    margin: space.lg, padding: space.xl, marginTop: space["3xl"],
+    backgroundColor: colors.bg.surface, borderRadius: radius.lg, alignItems: "center", ...shadows.e1,
+  },
+  errorText: { ...typography.bodyLg, color: colors.text.muted, textAlign: "center", lineHeight: 22 },
+
+  // List
+  list: { padding: space.lg },
+  card: {
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.lg,
+    marginBottom: space.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    ...shadows.e1,
+  },
+  cardOpen: {
+    borderColor: colors.brand.primaryLight,
+    ...shadows.e3,
+  },
+  questionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: space.lg,
+  },
+  qBadge: {
+    width: 30, height: 30, borderRadius: radius.sm,
+    backgroundColor: colors.bg.sunken,
+    alignItems: "center", justifyContent: "center", marginRight: space.md,
+  },
+  qBadgeOpen: { backgroundColor: colors.brand.tint },
+  qBadgeText: { ...typography.label, color: colors.text.muted, fontWeight: "800" },
+  qBadgeTextOpen: { color: colors.brand.primaryDark },
+  question: {
+    ...typography.bodyLg, flex: 1, color: colors.text.primary,
+    fontWeight: "700", marginRight: space.sm,
+  },
+  chevron: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
+
+  // Animated answer panel
+  panel: { overflow: "hidden" },
+  measure: { position: "absolute", left: 0, right: 0, top: 0 },
+  answerWrap: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.lg,
+    paddingLeft: space.lg + 30 + space.md, // align under the question text
+  },
+  answerDivider: {
+    height: 1, backgroundColor: colors.border.subtle, marginBottom: space.md,
+  },
+  answer: { ...typography.body, color: colors.text.secondary, lineHeight: 22 },
+});
 
 export default FAQ;
